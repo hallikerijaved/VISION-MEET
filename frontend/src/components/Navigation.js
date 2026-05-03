@@ -44,30 +44,31 @@ const NavDropdown = ({ title, icon, items, activePath }) => {
       </button>
 
       {isOpen && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, marginTop: '0.5rem',
-          background: '#1e1b4b', borderRadius: '12px', padding: '0.5rem',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.5)', minWidth: '180px',
-          border: '1px solid rgba(255,255,255,0.1)', zIndex: 1001,
-          display: 'flex', flexDirection: 'column', gap: '0.2rem'
-        }}>
-          {items.map(item => (
-            <div 
-              key={item.path} 
-              onClick={() => navigate(item.path)}
-              style={{
-                padding: '0.6rem 0.8rem', borderRadius: '8px', cursor: 'pointer',
-                color: activePath === item.path ? '#a78bfa' : 'rgba(255,255,255,0.8)',
-                background: activePath === item.path ? 'rgba(167,139,250,0.15)' : 'transparent',
-                fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => { if (activePath !== item.path) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'white'; } }}
-              onMouseLeave={e => { if (activePath !== item.path) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; } }}
-            >
-              <span>{item.icon}</span> {item.label}
-            </div>
-          ))}
+        <div style={{ position: 'absolute', top: '100%', left: 0, paddingTop: '0.5rem', zIndex: 1001 }}>
+          <div style={{
+            background: '#1e1b4b', borderRadius: '12px', padding: '0.5rem',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)', minWidth: '180px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex', flexDirection: 'column', gap: '0.2rem'
+          }}>
+            {items.map(item => (
+              <div 
+                key={item.path} 
+                onClick={() => navigate(item.path)}
+                style={{
+                  padding: '0.6rem 0.8rem', borderRadius: '8px', cursor: 'pointer',
+                  color: activePath === item.path ? '#a78bfa' : 'rgba(255,255,255,0.8)',
+                  background: activePath === item.path ? 'rgba(167,139,250,0.15)' : 'transparent',
+                  fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => { if (activePath !== item.path) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'white'; } }}
+                onMouseLeave={e => { if (activePath !== item.path) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; } }}
+              >
+                <span>{item.icon}</span> {item.label}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

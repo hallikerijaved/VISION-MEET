@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,19 +15,17 @@
   <!-- TOPBAR -->
   <header class="topbar">
     <div class="topbar-brand">
-      <div class="topbar-logo">✦</div>
       <div>
-        <div class="topbar-title">AI Resume Builder</div>
-        <div class="topbar-sub">Powered by Gemini AI</div>
+        <span class="topbar-title">Vision<span style="color:#a78bfa">Meet</span></span>
+        <span class="topbar-sub">AI Resume Builder</span>
       </div>
     </div>
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-sm" id="undo-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled>↩</button>
       <button class="btn btn-ghost btn-sm" id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y)" disabled>↪</button>
-      <button class="btn btn-ghost btn-sm" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
       <button class="btn btn-ghost btn-sm" onclick="saveResumeAs()" title="Save resume">💾 Save</button>
       <button class="btn btn-ghost btn-sm" onclick="clearAll()">🗑 Clear</button>
-      <button class="btn btn-primary btn-sm" id="export-btn" onclick="exportResume()">⬇ Export PDF</button>
+      <button class="btn btn-primary btn-sm" id="export-btn" onclick="exportResume()" style="background: white; color: #4f46e5; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">⬇ Export PDF</button>
     </div>
   </header>
 

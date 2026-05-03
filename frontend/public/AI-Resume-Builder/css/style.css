@@ -25,16 +25,18 @@
 
 /* ===================== LIGHT THEME ===================== */
 [data-theme="light"] {
-  --bg: #f4f4f8;
+  --bg: #f0f2f8;
   --bg2: #ffffff;
-  --bg3: #f0f0f5;
-  --bg4: #e4e4ee;
+  --bg3: #ffffff;
+  --bg4: #e5e7eb;
   --border: rgba(0,0,0,0.08);
-  --border2: rgba(0,0,0,0.14);
-  --text: #111118;
-  --text2: #555568;
-  --text3: #9090a8;
-  --preview-bg: #dde0e8;
+  --border2: rgba(0,0,0,0.12);
+  --text: #1f2937;
+  --text2: #4b5563;
+  --text3: #6b7280;
+  --preview-bg: #e2e8f0;
+  --accent: #4f46e5;
+  --accent-light: #6366f1;
 }
 
 html { scroll-behavior: smooth; }
@@ -47,21 +49,23 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 /* ===================== TOPBAR ===================== */
 .topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: 52px;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
+  height: 64px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border-bottom: none;
+  box-shadow: 0 4px 20px rgba(79,70,229,0.3);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px; gap: 8px;
+  padding: 0 2rem; gap: 8px;
+  color: white;
 }
 .topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.topbar-logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), #a855f7); display: flex; align-items: center; justify-content: center; font-size: 15px; }
-.topbar-title { font-size: 14px; font-weight: 700; letter-spacing: -0.3px; }
-.topbar-sub { font-size: 10px; color: var(--text2); }
-.topbar-actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.topbar-logo { display: none; }
+.topbar-title { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; color: white; }
+.topbar-sub { font-size: 11px; color: #a78bfa; margin-left: 6px; font-weight: 600; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* ===================== PROGRESS BAR ===================== */
 .progress-wrap {
-  position: fixed; top: 52px; left: 0; right: 0; z-index: 99;
+  position: fixed; top: 64px; left: 0; right: 0; z-index: 99;
   display: flex; align-items: center; gap: 8px;
   padding: 0 16px; height: 24px;
   background: var(--bg2); border-bottom: 1px solid var(--border);
@@ -83,8 +87,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 0 16px rgba(99,102,241,0.3); }
 .btn-primary:hover { background: var(--accent-light); border-color: var(--accent-light); }
-.btn-ghost { background: transparent; border-color: transparent; color: var(--text2); }
-.btn-ghost:hover { background: var(--bg3); color: var(--text); }
+.btn-ghost { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; }
+.btn-ghost:hover { background: rgba(255,255,255,0.2); color: white; }
 .btn-danger { color: var(--danger); border-color: transparent; background: transparent; }
 .btn-danger:hover { background: rgba(248,113,113,0.1); }
 .btn-sm { padding: 4px 9px; font-size: 11px; }
@@ -92,7 +96,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
 /* ===================== LAYOUT ===================== */
 .app-layout {
   display: grid; grid-template-columns: 320px 1fr;
-  height: 100vh; padding-top: 76px;
+  height: 100vh; padding-top: 88px;
 }
 
 /* ===================== SIDEBAR ===================== */
