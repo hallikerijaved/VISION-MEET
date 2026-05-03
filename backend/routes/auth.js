@@ -45,18 +45,18 @@ router.post("/send-otp", async (req, res) => {
 
   await OTP.create({ email, otp });
 
-  const subject = 'GD Platform OTP Verification';
+  const subject = 'Vision Meet OTP Verification';
   const text = `Your OTP is ${otp}. Use this code to complete your registration or login.`;
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; background: #f4f6fb; color: #1f2937;">
       <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08); overflow: hidden;">
         <div style="background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%); padding: 28px 24px; text-align: center; color: #ffffff;">
-          <h1 style="margin: 0; font-size: 24px; letter-spacing: -0.02em;">GD Platform</h1>
+          <h1 style="margin: 0; font-size: 24px; letter-spacing: -0.02em;">Vision Meet</h1>
           <p style="margin: 12px 0 0; font-size: 14px; opacity: 0.85;">Secure account verification</p>
         </div>
         <div style="padding: 32px 28px 24px;">
           <p style="margin: 0 0 18px; font-size: 16px; line-height: 1.75; color: #111827;">Hello,</p>
-          <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.75;">Use the code below to verify your identity and continue with GD Platform.</p>
+          <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.75;">Use the code below to verify your identity and continue with Vision Meet.</p>
           <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 24px;">
             <span style="display: inline-block; font-size: 32px; font-weight: 700; letter-spacing: 0.24em; color: #4338ca;">${otp}</span>
           </div>
@@ -64,7 +64,7 @@ router.post("/send-otp", async (req, res) => {
             <span style="display: inline-block; background: #eef2ff; color: #1d4ed8; border-radius: 9999px; padding: 10px 16px; font-size: 14px;">Expires in 5 minutes</span>
           </div>
           <p style="margin: 0 0 18px; font-size: 14px; line-height: 1.75; color: #4b5563;">If you did not request this code, you can ignore this email and no changes will be made to your account.</p>
-          <p style="margin: 0; font-size: 14px; line-height: 1.75; color: #4b5563;">Thanks,<br>The GD Platform Team</p>
+          <p style="margin: 0; font-size: 14px; line-height: 1.75; color: #4b5563;">Thanks,<br>The Vision Meet Team</p>
         </div>
         <div style="background: #f8fafc; padding: 18px 28px 24px; font-size: 13px; color: #6b7280;">
           <p style="margin: 0;">Need assistance? Reply to this email or visit our support center.</p>
@@ -221,18 +221,18 @@ router.post('/forgot-password', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await OTP.create({ email, otp });
 
-    const subject = 'GD Platform Password Reset Code';
+    const subject = 'Vision Meet Password Reset Code';
     const text = `Your password reset OTP is ${otp}. Enter this code in the app to reset your password.`;
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; background: #f4f6fb; color: #1f2937;">
         <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08); overflow: hidden;">
           <div style="background: linear-gradient(135deg, #111827 0%, #1d4ed8 100%); padding: 28px 24px; text-align: center; color: #ffffff;">
-            <h1 style="margin: 0; font-size: 24px; letter-spacing: -0.02em;">GD Platform</h1>
+            <h1 style="margin: 0; font-size: 24px; letter-spacing: -0.02em;">Vision Meet</h1>
             <p style="margin: 12px 0 0; font-size: 14px; opacity: 0.85;">Password reset confirmation</p>
           </div>
           <div style="padding: 32px 28px 24px;">
             <p style="margin: 0 0 18px; font-size: 16px; line-height: 1.75; color: #111827;">Hello,</p>
-            <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.75;">We received a request to reset your password. Enter the code below in the GD Platform app to continue.</p>
+            <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.75;">We received a request to reset your password. Enter the code below in the Vision Meet app to continue.</p>
             <div style="background: #eef2ff; border: 1px solid #93c5fd; border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 24px;">
               <span style="display: inline-block; font-size: 32px; font-weight: 700; letter-spacing: 0.24em; color: #1e40af;">${otp}</span>
             </div>
@@ -240,10 +240,10 @@ router.post('/forgot-password', async (req, res) => {
               <span style="display: inline-block; background: #e0f2fe; color: #0369a1; border-radius: 9999px; padding: 10px 16px; font-size: 14px;">Expires in 5 minutes</span>
             </div>
             <p style="margin: 0 0 18px; font-size: 14px; line-height: 1.75; color: #4b5563;">If you did not request a password reset, you can ignore this message. Your account will remain secure.</p>
-            <p style="margin: 0; font-size: 14px; line-height: 1.75; color: #4b5563;">Sincerely,<br>The GD Platform Security Team</p>
+            <p style="margin: 0; font-size: 14px; line-height: 1.75; color: #4b5563;">Sincerely,<br>The Vision Meet Security Team</p>
           </div>
           <div style="background: #f8fafc; padding: 18px 28px 24px; font-size: 13px; color: #6b7280;">
-            <p style="margin: 0;">If you need additional support, contact our team at support@gdplatform.com.</p>
+            <p style="margin: 0;">If you need additional support, contact our team at support@visionmeet.com.</p>
           </div>
         </div>
       </div>

@@ -135,6 +135,7 @@ const MainDashboard = ({ user }) => {
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <ActionBtn icon="🚀" label="Start New GD" onClick={() => navigate('/create-gd')} color="#4f46e5" />
             <ActionBtn icon="🤖" label="AI Mock Interview" onClick={() => navigate('/interview')} color="#e11d48" />
+            <ActionBtn icon="📄" label="AI Resume Builder" onClick={() => navigate('/resume-builder')} color="#8b5cf6" />
             <ActionBtn icon="📋" label="My Discussions" onClick={() => navigate('/my-gds')} color="#0891b2" />
             <ActionBtn icon="🔍" label="Browse All GDs" onClick={() => navigate('/browse-gds')} color="#059669" />
           </div>

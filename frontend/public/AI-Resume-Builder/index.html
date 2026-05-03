@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Resume Builder</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo">✦</div>
+      <div>
+        <div class="topbar-title">AI Resume Builder</div>
+        <div class="topbar-sub">Powered by Gemini AI</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" id="undo-btn" onclick="undo()" title="Undo (Ctrl+Z)" disabled>↩</button>
+      <button class="btn btn-ghost btn-sm" id="redo-btn" onclick="redo()" title="Redo (Ctrl+Y)" disabled>↪</button>
+      <button class="btn btn-ghost btn-sm" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">☀</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveResumeAs()" title="Save resume">💾 Save</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearAll()">🗑 Clear</button>
+      <button class="btn btn-primary btn-sm" id="export-btn" onclick="exportResume()">⬇ Export PDF</button>
+    </div>
+  </header>
+
+  <!-- PROGRESS BAR -->
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <span class="progress-label" id="progress-label">0%</span>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-tabs">
+        <button class="stab active" onclick="switchTab('info',this)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M3 13c0-2.76 2.24-5 5-5s5 2.24 5 5"/></svg>
+          Info
+        </button>
+        <button class="stab" onclick="switchTab('experience',this)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="12" height="9" rx="1.5"/><path d="M5 5V3.5A1.5 1.5 0 016.5 2h3A1.5 1.5 0 0111 3.5V5"/></svg>
+          Experience
+        </button>
+        <button class="stab" onclick="switchTab('design',this)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11M2.5 8h11"/></svg>
+          Design
+        </button>
+        <button class="stab" onclick="switchTab('tools',this)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h12M8 2v12"/><circle cx="8" cy="8" r="3"/></svg>
+          Tools
+        </button>
+      </div>
+
+      <!-- INFO TAB -->
+      <div class="sidebar-body tab-pane active" id="tab-info">
+        <div class="ai-status" id="ai-status">
+          <div class="ai-spinner"></div>
+          <span class="ai-status-text">Working…</span>
+        </div>
+
+        <div class="section-head">Personal Details</div>
+        <div class="field">
+          <label class="label">Full Name</label>
+          <input type="text" id="name" placeholder="Jane Doe" oninput="updatePreview();updateProgress();" />
+        </div>
+        <div class="field">
+          <label class="label">Job Title / Role</label>
+          <input type="text" id="role" placeholder="Senior Product Designer" oninput="updatePreview();updateProgress();" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Email</label>
+            <input type="text" id="email" placeholder="jane@example.com" oninput="updatePreview();updateProgress();" />
+          </div>
+          <div class="field">
+            <label class="label">Phone</label>
+            <input type="text" id="phone" placeholder="+1 555 000 0000" oninput="updatePreview();updateProgress();" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Location</label>
+            <input type="text" id="location" placeholder="San Francisco, CA" oninput="updatePreview();updateProgress();" />
+          </div>
+          <div class="field">
+            <label class="label">Website / LinkedIn</label>
+            <input type="text" id="website" placeholder="linkedin.com/in/jane" oninput="updatePreview();updateProgress();" />
+          </div>
+        </div>
+
+        <div class="section-head">Professional Summary</div>
+        <div class="field">
+          <textarea id="summary" placeholder="Write a brief summary, or let AI generate one…" oninput="updatePreview();updateProgress();"></textarea>
+        </div>
+        <button class="ai-btn" id="ai-summary-btn" onclick="enhanceSummary()">
+          <span class="spark">✦</span> Generate Summary with AI
+        </button>
+
+        <div class="section-head" style="margin-top:16px;">Skills</div>
+        <div class="skills-row">
+          <input type="text" id="skill-input" placeholder="Add a skill…" />
+          <button class="btn btn-sm" onclick="addSkill()">Add</button>
+        </div>
+        <div class="skills-tags" id="skills-tags"></div>
+        <button class="ai-btn mt-8" id="ai-skills-btn" onclick="suggestSkills()">
+          <span class="spark">✦</span> Suggest Skills with AI
+        </button>
+      </div>
+
+      <!-- EXPERIENCE TAB -->
+      <div class="sidebar-body tab-pane" id="tab-experience">
+        <div class="section-head" style="margin-top:0">Work Experience</div>
+        <div id="exp-list"></div>
+        <button class="add-card-btn" onclick="addExperience()">+ Add Experience</button>
+        <div class="section-head">Education</div>
+        <div id="edu-list"></div>
+        <button class="add-card-btn" onclick="addEducation()">+ Add Education</button>
+      </div>
+
+      <!-- DESIGN TAB -->
+      <div class="sidebar-body tab-pane" id="tab-design">
+        <div class="section-head" style="margin-top:0">Template</div>
+        <div class="tpl-grid">
+          <div class="tpl-card selected" id="tpl-classic" onclick="selectTemplate('classic')">
+            <div class="tpl-thumb" style="background:#f9f8f4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px;">
+              <div style="height:3px;width:55%;background:#1a1a1a;border-radius:1px;"></div>
+              <div style="height:2px;width:40%;background:#888;border-radius:1px;"></div>
+              <div style="height:1px;width:85%;background:#ddd;margin:3px 0;"></div>
+              <div style="height:2px;width:75%;background:#ccc;border-radius:1px;"></div>
+              <div style="height:2px;width:65%;background:#ccc;border-radius:1px;"></div>
+            </div>
+            <div class="tpl-name">Classic</div>
+          </div>
+          <div class="tpl-card" id="tpl-modern" onclick="selectTemplate('modern')">
+            <div class="tpl-thumb" style="display:flex;overflow:hidden;">
+              <div style="width:36%;background:#1a1a2e;height:100%;"></div>
+              <div style="flex:1;background:#fff;padding:6px;display:flex;flex-direction:column;gap:3px;">
+                <div style="height:5px;width:75%;background:#1a1a2e;border-radius:2px;"></div>
+                <div style="height:2px;width:55%;background:#ccc;border-radius:1px;"></div>
+                <div style="height:2px;width:80%;background:#eee;border-radius:1px;margin-top:4px;"></div>
+              </div>
+            </div>
+            <div class="tpl-name">Modern</div>
+          </div>
+          <div class="tpl-card" id="tpl-minimal" onclick="selectTemplate('minimal')">
+            <div class="tpl-thumb" style="background:#fff;padding:10px;display:flex;flex-direction:column;gap:3px;">
+              <div style="height:7px;width:55%;background:#111;border-radius:2px;"></div>
+              <div style="height:2px;width:38%;background:#aaa;border-radius:1px;"></div>
+              <div style="height:1px;width:88%;background:#eee;margin:4px 0;"></div>
+              <div style="height:2px;width:78%;background:#ddd;border-radius:1px;"></div>
+            </div>
+            <div class="tpl-name">Minimal</div>
+          </div>
+          <div class="tpl-card" id="tpl-creative" onclick="selectTemplate('creative')">
+            <div class="tpl-thumb" style="background:#fff;display:flex;flex-direction:column;overflow:hidden;">
+              <div style="background:linear-gradient(135deg,#6366f1,#a855f7);height:32%;padding:6px;">
+                <div style="height:3px;width:50%;background:rgba(255,255,255,0.8);border-radius:1px;"></div>
+              </div>
+              <div style="padding:5px;flex:1;display:flex;gap:5px;">
+                <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+                  <div style="height:2px;background:#6366f1;width:55%;border-radius:1px;"></div>
+                  <div style="height:2px;background:#eee;width:88%;border-radius:1px;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="tpl-name">Creative</div>
+          </div>
+        </div>
+
+        <div class="section-head">Accent Color</div>
+        <div class="accent-row">
+          <div class="accent-dot active" style="background:#6366f1" onclick="setAccent('#6366f1',this)"></div>
+          <div class="accent-dot" style="background:#0ea5e9" onclick="setAccent('#0ea5e9',this)"></div>
+          <div class="accent-dot" style="background:#10b981" onclick="setAccent('#10b981',this)"></div>
+          <div class="accent-dot" style="background:#f59e0b" onclick="setAccent('#f59e0b',this)"></div>
+          <div class="accent-dot" style="background:#ef4444" onclick="setAccent('#ef4444',this)"></div>
+          <div class="accent-dot" style="background:#a855f7" onclick="setAccent('#a855f7',this)"></div>
+          <div class="accent-dot" style="background:#ec4899" onclick="setAccent('#ec4899',this)"></div>
+          <div class="accent-dot" style="background:#1a1a1a" onclick="setAccent('#1a1a1a',this)"></div>
+        </div>
+      </div>
+
+      <!-- TOOLS TAB -->
+      <div class="sidebar-body tab-pane" id="tab-tools">
+
+        <!-- Resume Score -->
+        <div class="section-head" style="margin-top:0">📊 Resume Score</div>
+        <p class="tool-desc">AI rates your resume 0–100 and shows what's missing.</p>
+        <button class="ai-btn" id="score-btn" onclick="runResumeScore()"><span class="spark">✦</span> Analyze Resume Score</button>
+        <div class="tool-result" id="score-result"></div>
+
+        <!-- ATS Checker -->
+        <div class="section-head">🤖 ATS Checker</div>
+        <p class="tool-desc">Check if your resume passes Applicant Tracking Systems.</p>
+        <button class="ai-btn" id="ats-btn" onclick="runATSCheck()"><span class="spark">✦</span> Run ATS Check</button>
+        <div class="tool-result" id="ats-result"></div>
+
+        <!-- Job Description Match -->
+        <div class="section-head">🎯 Job Description Match</div>
+        <p class="tool-desc">Paste a job posting and AI tailors your resume to it.</p>
+        <div class="field">
+          <textarea id="jd-input" placeholder="Paste job description here…" style="min-height:90px;"></textarea>
+        </div>
+        <button class="ai-btn" id="jd-btn" onclick="runJobMatch()"><span class="spark">✦</span> Match to Job Description</button>
+        <div class="tool-result" id="jd-result"></div>
+
+        <!-- Cover Letter -->
+        <div class="section-head">✉ Cover Letter Generator</div>
+        <p class="tool-desc">AI writes a matching cover letter for you.</p>
+        <div class="field">
+          <textarea id="cover-job-desc" placeholder="Paste job description (optional)…" style="min-height:70px;"></textarea>
+        </div>
+        <button class="ai-btn" id="cover-btn" onclick="generateCoverLetter()"><span class="spark">✦</span> Generate Cover Letter</button>
+        <div class="field mt-8" id="cover-output-wrap" style="display:none;">
+          <textarea id="cover-result" style="min-height:200px;font-size:12px;line-height:1.7;" readonly></textarea>
+          <button class="btn btn-sm mt-8" onclick="copyCoverLetter()" style="width:100%;">📋 Copy to Clipboard</button>
+        </div>
+
+        <!-- Saved Resumes -->
+        <div class="section-head">💾 Saved Resumes</div>
+        <div id="resume-list"></div>
+      </div>
+
+    </aside>
+
+    <!-- PREVIEW PANEL -->
+    <main class="preview-panel">
+      <div class="preview-topbar">
+        <div class="preview-title">
+          <div class="live-dot"></div>
+          Live Preview
+        </div>
+      </div>
+      <div class="preview-scroll">
+        <div class="resume-paper" id="resume-output"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Mobile toggle -->
+  <button class="mobile-toggle" id="mobile-toggle" onclick="toggleSidebar()">☰</button>
+
+  <script src="js/templates.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    function switchTab(tab, el) {
+      document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(t => t.style.display = 'none');
+      document.getElementById('tab-' + tab).style.display = 'block';
+      el.classList.add('active');
+    }
+    function setAccent(color, el) {
+      window.accentColor = color;
+      document.querySelectorAll('.accent-dot').forEach(d => d.classList.remove('active'));
+      el.classList.add('active');
+      updatePreview(); autoSave();
+    }
+  </script>
+</body>
+</html>

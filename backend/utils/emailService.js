@@ -17,11 +17,11 @@ class EmailService {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Password Reset - GD Platform',
+      subject: 'Password Reset - Vision Meet',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Password Reset Request</h2>
-          <p>You requested a password reset for your GD Platform account.</p>
+          <p>You requested a password reset for your Vision Meet account.</p>
           <p>Click the button below to reset your password:</p>
           <a href="${resetLink}" style="display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0;">
             Reset Password
@@ -30,7 +30,7 @@ class EmailService {
           <p>This link will expire in 1 hour.</p>
           <p>If you didn't request this, please ignore this email.</p>
           <hr>
-          <p style="color: #666; font-size: 12px;">GD Platform Team</p>
+          <p style="color: #666; font-size: 12px;">Vision Meet Team</p>
         </div>
       `
     };

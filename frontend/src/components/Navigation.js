@@ -1,25 +1,114 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+
+const NavItem = ({ item, active, onClick }) => (
+  <button onClick={onClick} style={{
+    padding: '0.45rem 0.85rem',
+    background: active ? 'rgba(167,139,250,0.2)' : 'transparent',
+    color: active ? '#a78bfa' : 'rgba(255,255,255,0.7)',
+    border: active ? '1px solid rgba(167,139,250,0.4)' : '1px solid transparent',
+    borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: active ? '600' : '400',
+    whiteSpace: 'nowrap', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.4rem'
+  }}
+    onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white'; }}}
+    onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}}
+  >
+    <span>{item.icon}</span> {item.label}
+  </button>
+);
+
+const NavDropdown = ({ title, icon, items, activePath }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const isActive = items.some(item => item.path === activePath);
+
+  return (
+    <div 
+      style={{ position: 'relative' }} 
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button style={{
+        padding: '0.45rem 0.85rem',
+        background: isActive ? 'rgba(167,139,250,0.2)' : 'transparent',
+        color: isActive ? '#a78bfa' : 'rgba(255,255,255,0.7)',
+        border: isActive ? '1px solid rgba(167,139,250,0.4)' : '1px solid transparent',
+        borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: isActive ? '600' : '400',
+        whiteSpace: 'nowrap', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.4rem'
+      }}
+        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white'; }}}
+        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}}
+      >
+        <span>{icon}</span> {title}
+        <span style={{ fontSize: '0.7rem', opacity: 0.7, transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>▼</span>
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, marginTop: '0.5rem',
+          background: '#1e1b4b', borderRadius: '12px', padding: '0.5rem',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.5)', minWidth: '180px',
+          border: '1px solid rgba(255,255,255,0.1)', zIndex: 1001,
+          display: 'flex', flexDirection: 'column', gap: '0.2rem'
+        }}>
+          {items.map(item => (
+            <div 
+              key={item.path} 
+              onClick={() => navigate(item.path)}
+              style={{
+                padding: '0.6rem 0.8rem', borderRadius: '8px', cursor: 'pointer',
+                color: activePath === item.path ? '#a78bfa' : 'rgba(255,255,255,0.8)',
+                background: activePath === item.path ? 'rgba(167,139,250,0.15)' : 'transparent',
+                fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { if (activePath !== item.path) { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'white'; } }}
+              onMouseLeave={e => { if (activePath !== item.path) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; } }}
+            >
+              <span>{item.icon}</span> {item.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Navigation = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const navItems = [
-    { path: '/dashboard', label: '🏠 Dashboard' },
-    { path: '/create-gd', label: '🚀 Start GD' },
-    { path: '/interview', label: '💬 AI Interview' },
-    { path: '/browse-gds', label: '🔍 Browse' },
-    { path: '/my-gds', label: '📋 My GDs' },
-    { path: '/evaluations', label: '📊 Evaluations' },
-    { path: '/certificates', label: '🏆 Certificates' }
-  ];
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.reload();
   };
+
+  const navStructure = [
+    { type: 'link', path: '/dashboard', label: 'Dashboard', icon: '🏠' },
+    { 
+      type: 'dropdown', title: 'Discussions', icon: '💬', 
+      items: [
+        { path: '/create-gd', label: 'Start New GD', icon: '🚀' },
+        { path: '/browse-gds', label: 'Browse GDs', icon: '🔍' },
+        { path: '/my-gds', label: 'My GDs', icon: '📋' }
+      ]
+    },
+    { 
+      type: 'dropdown', title: 'AI Tools', icon: '🤖', 
+      items: [
+        { path: '/interview', label: 'AI Interview', icon: '🎤' },
+        { path: '/resume-builder', label: 'Resume Builder', icon: '📄' }
+      ]
+    },
+    { 
+      type: 'dropdown', title: 'Performance', icon: '📊', 
+      items: [
+        { path: '/evaluations', label: 'Evaluations', icon: '📈' },
+        { path: '/certificates', label: 'Certificates', icon: '🏆' }
+      ]
+    }
+  ];
 
   return (
     <nav style={{
@@ -36,24 +125,14 @@ const Navigation = ({ user }) => {
         </div>
 
         {/* Nav Items */}
-        <div style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto' }}>
-          {navItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <button key={item.path} onClick={() => navigate(item.path)} style={{
-                padding: '0.45rem 0.85rem',
-                background: active ? 'rgba(167,139,250,0.2)' : 'transparent',
-                color: active ? '#a78bfa' : 'rgba(255,255,255,0.7)',
-                border: active ? '1px solid rgba(167,139,250,0.4)' : '1px solid transparent',
-                borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: active ? '600' : '400',
-                whiteSpace: 'nowrap', transition: 'all 0.2s'
-              }}
-                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'white'; }}}
-                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}}
-              >
-                {item.label}
-              </button>
-            );
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {navStructure.map((menu, idx) => {
+            if (menu.type === 'link') {
+              return <NavItem key={idx} item={menu} active={location.pathname === menu.path} onClick={() => navigate(menu.path)} />;
+            } else if (menu.type === 'dropdown') {
+              return <NavDropdown key={idx} title={menu.title} icon={menu.icon} items={menu.items} activePath={location.pathname} />;
+            }
+            return null;
           })}
         </div>
 
@@ -71,7 +150,8 @@ const Navigation = ({ user }) => {
                 </div>
               )}
             </div>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', fontWeight: '500' }}>{user.name}</span>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', fontWeight: '500', display: 'none' }} className="nav-username">{user.name}</span>
+            <style>{`@media (min-width: 768px) { .nav-username { display: inline !important; } }`}</style>
           </div>
           <button onClick={logout} style={{
             padding: '0.4rem 1rem', background: 'rgba(239,68,68,0.15)', color: '#fca5a5',
