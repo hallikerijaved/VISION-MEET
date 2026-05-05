@@ -45,6 +45,9 @@ export default function GDRoom({ user }) {
   const [evaluation,     setEvaluation]     = useState(null);
   const [showEval,       setShowEval]       = useState(false);
   const [evaluating,     setEvaluating]     = useState(false);
+  const [copied,         setCopied]         = useState(false);
+  const [isChatOpen,     setIsChatOpen]     = useState(false);
+  const [unreadCount,    setUnreadCount]    = useState(0);
 
   /* ── stable refs (never cause re-renders) ── */
   const socketRef       = useRef(null);
@@ -55,9 +58,13 @@ export default function GDRoom({ user }) {
   const recognitionRef  = useRef(null);
   const silenceRef      = useRef(null);
   const transcriptRef   = useRef('');
+  const messagesEndRef  = useRef(null);
+  const isChatOpenRef   = useRef(false);
 
-  /* keep transcriptRef in sync */
-  useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
+  /* scroll chat to bottom */
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, transcript]);
 
   /* ════════════════════════════════════════════
      createPC — always reads localStreamRef.current
@@ -156,6 +163,9 @@ export default function GDRoom({ user }) {
     /* ── chat ── */
     socket.on('receive-message', data => {
       setMessages(prev => [...prev, data]);
+      if (!isChatOpenRef.current) {
+        setUnreadCount(prev => prev + 1);
+      }
     });
 
     socket.on('session-closed', () => {
@@ -190,6 +200,15 @@ export default function GDRoom({ user }) {
     const msg = { roomId, message: text, sender: user.name, timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
     socketRef.current.emit('send-message', msg);
     setContributions(p => [...p, text]);
+  };
+
+  const toggleChat = () => {
+    const newState = !isChatOpen;
+    setIsChatOpen(newState);
+    isChatOpenRef.current = newState;
+    if (newState) {
+      setUnreadCount(0);
+    }
   };
 
   /* ── media controls ── */
@@ -242,19 +261,25 @@ export default function GDRoom({ user }) {
     recognitionRef.current = r;
     r.onstart = () => { setIsVoiceMode(true); setIsListening(true); };
     r.onresult = event => {
-      let interim = '', final = '';
+      let currentInterim = '';
+      let newlyFinal = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) final += t + ' '; else interim += t;
+        if (event.results[i].isFinal) newlyFinal += t + ' '; else currentInterim += t;
       }
-      if (final) {
-        setTranscript(p => p + final);
-        clearTimeout(silenceRef.current);
-        silenceRef.current = setTimeout(() => {
-          const txt = transcriptRef.current.trim();
-          if (txt) { sendVoiceMsg(txt); setTranscript(''); }
-        }, 2000);
-      } else { setTranscript(interim); }
+      if (newlyFinal) {
+        transcriptRef.current = (transcriptRef.current + newlyFinal).trim() + ' ';
+      }
+      setTranscript(transcriptRef.current + currentInterim);
+      clearTimeout(silenceRef.current);
+      silenceRef.current = setTimeout(() => {
+        const txt = transcriptRef.current.trim();
+        if (txt) { 
+          sendVoiceMsg(txt); 
+          transcriptRef.current = '';
+          setTranscript('');
+        }
+      }, 2000);
     };
     r.onerror = e => { if (e.error !== 'no-speech') console.error(e.error); };
     r.onend = () => { if (recognitionRef.current) r.start(); };
@@ -264,7 +289,9 @@ export default function GDRoom({ user }) {
   const stopVoiceMode = () => {
     recognitionRef.current?.stop(); recognitionRef.current = null;
     clearTimeout(silenceRef.current);
-    setIsVoiceMode(false); setIsListening(false); setTranscript('');
+    setIsVoiceMode(false); setIsListening(false); 
+    transcriptRef.current = '';
+    setTranscript('');
   };
 
   /* ── evaluation ── */
@@ -360,10 +387,15 @@ export default function GDRoom({ user }) {
         {/* ── Video grid ── */}
         <div className="video-area">
           <div className="share-link-wrapper">
-            <span>🔗 Share Link:</span>
-            <span className="share-url">{window.location.origin}/join/{roomId}</span>
-            <button className="btn-copy" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/join/${roomId}`)}>
-              Copy
+            <button 
+              className="btn-copy" 
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/join/${roomId}`);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+            >
+              {copied ? '✅ Copied!' : '🔗 Copy Share Link'}
             </button>
           </div>
 
@@ -386,18 +418,25 @@ export default function GDRoom({ user }) {
               [toggleVideo,  isVideoOn  ? '📹 Video On'    : '📹 Video Off',   isVideoOn  ? 'btn-active' : 'btn-danger'],
               [toggleAudio,  isAudioOn  ? '🎤 Mic On'      : '🎤 Mic Off',     isAudioOn  ? 'btn-active' : 'btn-danger'],
               [isScreenShare ? stopScreenShare : startScreenShare, isScreenShare ? '🖥️ Stop Share' : '🖥️ Share Screen', isScreenShare ? 'btn-danger' : 'btn-info'],
-              [isVoiceMode   ? stopVoiceMode   : startVoiceMode,   isVoiceMode   ? '🔴 Stop Voice'  : '🎙️ Voice Mode',  isVoiceMode   ? 'btn-danger' : 'btn-primary'],
             ].map(([fn, label, btnClass]) => (
               <button key={label} onClick={fn} className={`control-btn ${btnClass}`}>
                 {label}
               </button>
             ))}
           </div>
+
+          <button 
+            className={`chat-floating-btn ${isChatOpen ? 'active' : ''} ${!isChatOpen && unreadCount > 0 ? 'has-unread' : ''}`}
+            onClick={toggleChat}
+          >
+            💬 Chat {unreadCount > 0 ? `(${unreadCount})` : ''}
+          </button>
         </div>
 
         {/* ── Chat ── */}
-        <div className="chat-sidebar">
-          <div className="chat-header">
+        {isChatOpen && (
+          <div className="chat-sidebar">
+            <div className="chat-header">
             <span>💬 Live Chat</span>
             {isVoiceMode && (
               <span className={`voice-status ${isListening ? 'listening' : 'paused'}`}>
@@ -428,6 +467,7 @@ export default function GDRoom({ user }) {
                 </div>
               );
             })}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="chat-input-area">
@@ -440,6 +480,14 @@ export default function GDRoom({ user }) {
                 placeholder={isVoiceMode ? 'Voice mode on...' : 'Type a message...'}
                 disabled={isVoiceMode}
               />
+              <button 
+                type="button" 
+                className={`btn-voice-chat ${isVoiceMode ? 'active' : ''}`}
+                onClick={isVoiceMode ? stopVoiceMode : startVoiceMode}
+                title={isVoiceMode ? 'Stop Voice Mode' : 'Start Voice Mode'}
+              >
+                {isVoiceMode ? '🔴' : '🎙️'}
+              </button>
               <button type="submit" className="btn-send" disabled={isVoiceMode || !newMessage.trim()}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -449,6 +497,7 @@ export default function GDRoom({ user }) {
             </form>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

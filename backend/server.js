@@ -21,7 +21,9 @@ const server = http.createServer(app);
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://192.168.31.5:3000',
+  'http://192.168.31.5:3001',
   'https://vision-meet-tau.vercel.app'
 ].filter(Boolean);
 

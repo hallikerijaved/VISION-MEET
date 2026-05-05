@@ -66,7 +66,11 @@ const Login = ({ setUser }) => {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       setUser(response.data.user);
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid credentials');
+      if (!err.response) {
+        setError('Network Error: Could not connect to the server');
+      } else {
+        setError(err.response?.data?.message || 'Invalid credentials');
+      }
     } finally {
       setLoading(false);
     }
