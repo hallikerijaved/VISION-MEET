@@ -8,7 +8,7 @@
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm start",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npm run build",
+    "build": "cd frontend && CI=false npm run build",
     "start": "cd backend && npm start",
     "start:prod": "concurrently \"cd backend && npm start\" \"cd frontend && serve -s build\"",
     "test": "cd frontend && npm test",
@@ -35,14 +35,13 @@
   "bugs": {
     "url": "https://github.com/your-username/gd-platform/issues"
   },
-  "homepage": "https://github.com/your-username/gd-platform#readme",
+  "homepage": ".",
   "devDependencies": {
     "concurrently": "^7.6.0",
     "serve": "^14.2.1"
   },
   "engines": {
-    "node": ">=14.0.0",
-    "npm": ">=6.0.0"
+    "node": "18.x"
   },
   "dependencies": {
     "nodemailer": "^7.0.11"
