@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+sentence-transformers
+transformers
+keybert
+language-tool-python
+nltk
+scikit-learn
+torch

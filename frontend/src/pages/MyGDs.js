@@ -14,11 +14,8 @@ const MyGDs = ({ user }) => {
 
   const fetchMyGDs = async () => {
     try {
-      const response = await gd.getAll();
-      const filtered = response.data.filter(gdItem => 
-        gdItem.moderator._id === user.id || gdItem.participants.some(p => p._id === user.id)
-      );
-      setMyGDs(filtered);
+      const response = await gd.getConducted();
+      setMyGDs(response.data);
     } catch (error) {
       console.error('Error fetching my GDs:', error);
     }

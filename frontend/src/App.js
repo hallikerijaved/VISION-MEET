@@ -13,9 +13,10 @@ import JoinGD from './pages/JoinGD';
 import ResetPassword from './pages/ResetPassword';
 import RealTimeInterview from './pages/RealTimeInterview';
 import Evaluations from './pages/Evaluations';
-import Certificates from './pages/Certificates';
+
 import Profile from './pages/Profile';
 import ResumeBuilder from './pages/ResumeBuilder';
+import ResultsDashboard from './pages/ResultsDashboard';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -45,7 +46,8 @@ function App() {
         <Route path="/my-gds" element={user && user.email !== 'admin@gd.com' ? <MyGDs user={user} /> : <Navigate to="/login" />} />
         <Route path="/interview" element={user && user.email !== 'admin@gd.com' ? <RealTimeInterview user={user} /> : <Navigate to="/login" />} />
         <Route path="/evaluations" element={user && user.email !== 'admin@gd.com' ? <Evaluations user={user} /> : <Navigate to="/login" />} />
-        <Route path="/certificates" element={user && user.email !== 'admin@gd.com' ? <Certificates user={user} /> : <Navigate to="/login" />} />
+        <Route path="/dashboard/results/:gdId" element={user ? <ResultsDashboard user={user} /> : <Navigate to="/login" />} />
+
         <Route path="/resume-builder" element={user && user.email !== 'admin@gd.com' ? <ResumeBuilder user={user} /> : <Navigate to="/login" />} />
         <Route path="/profile" element={user && user.email !== 'admin@gd.com' ? <Profile user={user} setUser={setUser} /> : <Navigate to="/login" />} />
         <Route path="/admin" element={user?.email === 'admin@gd.com' ? <AdminPanel user={user} /> : <Navigate to="/login" />} />

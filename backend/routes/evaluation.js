@@ -3,7 +3,6 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const Evaluation = require('../models/Evaluation');
 const aiAnalysis = require('../services/aiAnalysis');
-const blockchainService = require('../services/blockchain');
 
 // Generate and store evaluation with blockchain certificate
 router.post('/generate', auth, async (req, res) => {
@@ -15,7 +14,10 @@ router.post('/generate', auth, async (req, res) => {
     }
 
     const combinedText = contributions.join(' ');
-    const analysis = await aiAnalysis.analyzeCommunication(combinedText, req.user.name);
+    const analysis = await aiAnalysis.analyzeCommunication(combinedText, req.user.name, gdTitle, gdTitle);
+
+    const speakingTimeRatio = speakingTime > 0 ? (speakingTime / 60) : 0;
+    const engagementScore = (0.5 * contributions.length) + (0.5 * speakingTimeRatio);
 
     const evaluation = new Evaluation({
       gdId,
@@ -23,40 +25,30 @@ router.post('/generate', auth, async (req, res) => {
       userName: req.user.name,
       gdTitle: gdTitle || 'Group Discussion',
       scores: {
-        clarity: analysis.clarity,
-        relevance: analysis.relevance,
-        engagement: analysis.engagement,
-        professionalism: analysis.professionalism,
-        totalScore: analysis.totalScore
+        topicRelevance: analysis.topicRelevance,
+        semanticSimilarity: analysis.semanticSimilarity,
+        keywordMatching: analysis.keywordMatching,
+        sentimentScore: analysis.sentimentScore,
+        grammarQuality: analysis.grammarQuality,
+        communicationQuality: analysis.communicationQuality,
+        participationAnalysis: analysis.participationAnalysis,
+        confidenceAnalysis: analysis.confidenceAnalysis,
+        finalScore: analysis.finalScore
       },
       feedback: analysis.feedback,
       strengths: analysis.strengths,
+      weaknesses: analysis.weaknesses,
       improvements: analysis.improvements,
+      matchedKeywords: analysis.matchedKeywords || [],
       messageCount: messageCount || 0,
-      speakingTime: speakingTime || 0
+      speakingTime: speakingTime || 0,
+      engagementScore: engagementScore,
+      transcript: contributions
     });
 
     await evaluation.save();
 
-    if (analysis.totalScore >= 60) {
-      const certificate = await blockchainService.issueCertificate({
-        userName: req.user.name,
-        certificateType: 'GD_EVALUATION',
-        gdTitle: gdTitle || 'Group Discussion',
-        score: analysis.totalScore,
-        metadata: { clarity: analysis.clarity, relevance: analysis.relevance, engagement: analysis.engagement, professionalism: analysis.professionalism }
-      });
-
-      evaluation.blockchainCertificate = {
-        certificateId: certificate.certificateId,
-        blockHash: certificate.blockHash,
-        blockIndex: certificate.blockIndex,
-        timestamp: new Date()
-      };
-      await evaluation.save();
-    }
-
-    res.json({ success: true, evaluation, certificateIssued: analysis.totalScore >= 60 });
+    res.json({ success: true, evaluation });
   } catch (error) {
     console.error('Evaluation error:', error);
     res.status(500).json({ message: 'Evaluation failed', error: error.message });
@@ -70,6 +62,16 @@ router.get('/my-evaluations', auth, async (req, res) => {
     res.json(evaluations);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch evaluations' });
+  }
+});
+
+// Get evaluations for a specific GD session
+router.get('/session/:gdId', auth, async (req, res) => {
+  try {
+    const evaluations = await Evaluation.find({ gdId: req.params.gdId }).sort({ 'scores.finalScore': -1 });
+    res.json(evaluations);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch session evaluations' });
   }
 });
 

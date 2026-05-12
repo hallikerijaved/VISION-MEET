@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import Navigation from '../components/Navigation';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+import api from '../utils/api';
 
 function RealTimeInterview({ user }) {
   const navigate = useNavigate();
@@ -23,6 +21,7 @@ function RealTimeInterview({ user }) {
   const [currentQuestion, setCurrentQuestion] = useState('');
   const [statusText, setStatusText] = useState('Ready');
   const [jobDescription, setJobDescription] = useState('');
+  const [interimText, setInterimText] = useState('');
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -33,15 +32,78 @@ function RealTimeInterview({ user }) {
   const voiceModeActiveRef = useRef(false);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const sessionActiveRef = useRef(false);
+  const responseDelayRef = useRef(null);
+  const resultsDelayRef = useRef(null);
+  const speechFallbackRef = useRef(null);
+
+  const startRecognition = React.useCallback(() => {
+    if (!sessionActiveRef.current || !recognitionRef.current) {
+      return false;
+    }
+
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+      setStatusText('Listening');
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }, []);
+
+  const stopCamera = React.useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  const cleanupInterviewSession = React.useCallback(() => {
+    sessionActiveRef.current = false;
+    voiceModeActiveRef.current = false;
+    isSpeakingRef.current = false;
+
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (responseDelayRef.current) {
+      clearTimeout(responseDelayRef.current);
+      responseDelayRef.current = null;
+    }
+    if (resultsDelayRef.current) {
+      clearTimeout(resultsDelayRef.current);
+      resultsDelayRef.current = null;
+    }
+    if (speechFallbackRef.current) {
+      clearTimeout(speechFallbackRef.current);
+      speechFallbackRef.current = null;
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        // Recognition may already be stopped.
+      }
+    }
+
+    synthRef.current.cancel();
+    setIsListening(false);
+    setIsSpeaking(false);
+    stopCamera();
+  }, [stopCamera]);
 
   const processVoiceResponse = async () => {
     const capturedAnswer = transcriptRef.current.trim();
-    if (!capturedAnswer || isSpeakingRef.current) {
+    if (!sessionActiveRef.current || !capturedAnswer || isSpeakingRef.current) {
       return;
     }
 
     setMessages((previous) => [...previous, { type: 'user', text: capturedAnswer }]);
     setTranscript('');
+    setInterimText('');
     transcriptRef.current = '';
     setStatusText('Thinking');
     await sendMessage(capturedAnswer);
@@ -53,10 +115,10 @@ function RealTimeInterview({ user }) {
     }
 
     silenceTimerRef.current = setTimeout(() => {
-      if (mode === 'voice' && transcriptRef.current.trim() && !isSpeakingRef.current) {
+      if (sessionActiveRef.current && mode === 'voice' && transcriptRef.current.trim() && !isSpeakingRef.current) {
         processVoiceResponse();
       }
-    }, 1800);
+    }, 3000); // Increased to 3 seconds for more natural pauses
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
@@ -69,17 +131,26 @@ function RealTimeInterview({ user }) {
   }, [transcript]);
 
   useEffect(() => {
-    if (step === 'interview') {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-        .then(stream => {
-          streamRef.current = stream;
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        })
-        .catch(err => console.error('Camera access denied:', err));
+    if (step !== 'interview') {
+      stopCamera();
+      return undefined;
     }
-  }, [step]);
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return undefined;
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(stream => {
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      })
+      .catch(err => console.error('Camera access denied:', err));
+
+    return stopCamera;
+  }, [step, stopCamera]);
 
   useEffect(() => {
     voiceModeActiveRef.current = mode === 'voice' && step === 'interview';
@@ -92,7 +163,6 @@ function RealTimeInterview({ user }) {
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const synth = synthRef.current;
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = mode === 'voice';
@@ -108,11 +178,16 @@ function RealTimeInterview({ user }) {
       }
 
       let finalTranscript = '';
+      let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
         if (event.results[i].isFinal) {
           finalTranscript += `${event.results[i][0].transcript} `;
+        } else {
+          interim += event.results[i][0].transcript;
         }
       }
+
+      setInterimText(interim);
 
       if (finalTranscript) {
         setTranscript((previous) => previous + finalTranscript);
@@ -126,18 +201,14 @@ function RealTimeInterview({ user }) {
     };
 
     recognitionRef.current.onend = () => {
-      const shouldResume = voiceModeActiveRef.current && !isSpeakingRef.current;
+      const shouldResume = sessionActiveRef.current && voiceModeActiveRef.current && !isSpeakingRef.current;
       if (!shouldResume) {
         setIsListening(false);
         return;
       }
 
       setTimeout(() => {
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-          setStatusText('Listening');
-        } catch (error) {
+        if (!startRecognition()) {
           setIsListening(false);
         }
       }, 250);
@@ -147,15 +218,16 @@ function RealTimeInterview({ user }) {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
-      synth.cancel();
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
       }
     };
-  }, [mode, step, resetSilenceTimer]);
+  }, [mode, resetSilenceTimer, startRecognition]);
+
+  useEffect(() => cleanupInterviewSession, [cleanupInterviewSession]);
 
   const speakText = (text) => new Promise((resolve) => {
-    if (mode !== 'voice' || !text) {
+    if (!sessionActiveRef.current || mode !== 'voice' || !text) {
       resolve();
       return;
     }
@@ -168,16 +240,24 @@ function RealTimeInterview({ user }) {
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Assign a voice to prevent silent errors
+    // Select premium voice if available (Google/Microsoft)
     const voices = synthRef.current.getVoices();
-    const englishVoice = voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
-    if (englishVoice) {
-      utterance.voice = englishVoice;
+    const premiumVoice = voices.find(v => v.lang.startsWith('en-US') && (v.name.includes('Google') || v.name.includes('Zira'))) 
+      || voices.find(v => v.lang.startsWith('en-US')) 
+      || voices[0];
+    if (premiumVoice) {
+      utterance.voice = premiumVoice;
     }
 
     utterance.rate = 0.95;
     utterance.pitch = 1;
     utterance.onstart = () => {
+      if (!sessionActiveRef.current) {
+        synthRef.current.cancel();
+        resolve();
+        return;
+      }
+
       isSpeakingRef.current = true;
       setIsSpeaking(true);
       setStatusText('AI speaking');
@@ -194,13 +274,13 @@ function RealTimeInterview({ user }) {
       console.error('SpeechSynthesis Error:', e);
       isSpeakingRef.current = false;
       setIsSpeaking(false);
-      if (voiceModeActiveRef.current) setStatusText('Listening');
+      if (sessionActiveRef.current && voiceModeActiveRef.current) setStatusText('Listening');
       resolve();
     };
     utterance.onend = () => {
       isSpeakingRef.current = false;
       setIsSpeaking(false);
-      if (voiceModeActiveRef.current) {
+      if (sessionActiveRef.current && voiceModeActiveRef.current) {
         setStatusText('Listening');
       }
       resolve();
@@ -208,8 +288,8 @@ function RealTimeInterview({ user }) {
 
     // Chrome bug fallback for long strings without onend firing
     const fallbackDuration = Math.max(text.length * 100, 3000);
-    const fallbackTimeout = setTimeout(() => {
-      if (isSpeakingRef.current) {
+    speechFallbackRef.current = setTimeout(() => {
+      if (sessionActiveRef.current && isSpeakingRef.current) {
         isSpeakingRef.current = false;
         setIsSpeaking(false);
         if (voiceModeActiveRef.current) setStatusText('Listening');
@@ -219,21 +299,30 @@ function RealTimeInterview({ user }) {
 
     const originalOnEnd = utterance.onend;
     utterance.onend = () => {
-      clearTimeout(fallbackTimeout);
+      if (speechFallbackRef.current) {
+        clearTimeout(speechFallbackRef.current);
+        speechFallbackRef.current = null;
+      }
       originalOnEnd();
     };
+
+    if (!sessionActiveRef.current) {
+      resolve();
+      return;
+    }
 
     synthRef.current.speak(utterance);
   });
 
   const startInterview = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_URL}/realtime-interview/start`,
-        { role, difficulty, jobDescription },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      cleanupInterviewSession();
+      sessionActiveRef.current = true;
+      const response = await api.post('/realtime-interview/start', { role, difficulty, jobDescription });
+
+      if (!sessionActiveRef.current) {
+        return;
+      }
 
       setSessionId(response.data.sessionId);
       setMessages([
@@ -247,15 +336,14 @@ function RealTimeInterview({ user }) {
 
       if (mode === 'voice') {
         await speakText(response.data.greeting);
+        if (!sessionActiveRef.current) return;
         await speakText(response.data.firstQuestion);
-        if (recognitionRef.current) {
-          recognitionRef.current.start();
-          setIsListening(true);
-          setStatusText('Listening');
-        }
+        if (!sessionActiveRef.current) return;
+        startRecognition();
       }
     } catch (error) {
-      alert('Error starting interview');
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error starting interview';
+      alert(message);
     }
   };
 
@@ -265,9 +353,7 @@ function RealTimeInterview({ user }) {
       return;
     }
 
-    setIsListening(true);
-    setStatusText('Listening');
-    recognitionRef.current.start();
+    startRecognition();
   };
 
   const stopListening = () => {
@@ -278,9 +364,22 @@ function RealTimeInterview({ user }) {
     setStatusText('Paused');
   };
 
+  const endInterview = () => {
+    const endedSessionId = sessionId;
+    cleanupInterviewSession();
+
+    if (endedSessionId) {
+      api.patch(`/realtime-interview/${endedSessionId}/end`).catch((error) => {
+        console.error('Failed to mark interview as ended:', error);
+      });
+    }
+
+    navigate('/dashboard');
+  };
+
   const sendMessage = async (messageText) => {
     const textToSend = messageText || userInput.trim();
-    if (!textToSend || isAITyping) {
+    if (!sessionActiveRef.current || !textToSend || isAITyping) {
       return;
     }
 
@@ -293,14 +392,18 @@ function RealTimeInterview({ user }) {
     setStatusText('Thinking');
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `${API_URL}/realtime-interview/respond`,
-        { sessionId, userAnswer: textToSend, currentQuestion },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await api.post('/realtime-interview/respond', { sessionId, userAnswer: textToSend, currentQuestion });
 
-      setTimeout(async () => {
+      if (!sessionActiveRef.current) {
+        return;
+      }
+
+      responseDelayRef.current = setTimeout(async () => {
+        responseDelayRef.current = null;
+        if (!sessionActiveRef.current) {
+          return;
+        }
+
         if (response.data.completed) {
           setMessages((previous) => [
             ...previous,
@@ -310,7 +413,9 @@ function RealTimeInterview({ user }) {
 
           if (mode === 'voice') {
             await speakText(response.data.feedback);
+            if (!sessionActiveRef.current) return;
             await speakText(response.data.closingMessage);
+            if (!sessionActiveRef.current) return;
             if (recognitionRef.current) {
               recognitionRef.current.stop();
             }
@@ -319,7 +424,12 @@ function RealTimeInterview({ user }) {
           setCurrentQuestion('');
           setResults(response.data.results);
           setStatusText('Interview complete');
-          setTimeout(() => setStep('results'), 1800);
+          resultsDelayRef.current = setTimeout(() => {
+            resultsDelayRef.current = null;
+            if (sessionActiveRef.current) {
+              setStep('results');
+            }
+          }, 1800);
         } else {
           setMessages((previous) => [
             ...previous,
@@ -330,7 +440,9 @@ function RealTimeInterview({ user }) {
           setCurrentQuestion(response.data.nextQuestion);
           if (mode === 'voice') {
             await speakText(response.data.feedback);
+            if (!sessionActiveRef.current) return;
             await speakText(response.data.nextQuestion);
+            if (!sessionActiveRef.current) return;
           }
 
           setQuestionCount((previous) => previous + 1);
@@ -342,7 +454,8 @@ function RealTimeInterview({ user }) {
     } catch (error) {
       setIsAITyping(false);
       setStatusText('Error');
-      alert('Error sending message');
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error sending message';
+      alert(message);
     }
   };
 
@@ -353,10 +466,40 @@ function RealTimeInterview({ user }) {
     }
   };
 
+  const renderCameraTile = () => (
+    <div className="interview-camera-card">
+      <div className="camera-header">
+        <span>Camera Preview</span>
+        <span className="camera-live-dot">Live</span>
+      </div>
+      <div className="camera-frame">
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+        />
+      </div>
+      <div className="camera-meta">
+        <strong>{user?.name || 'Candidate'}</strong>
+        <span>{role}</span>
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <div style={{ minHeight: '100vh', background: '#eef2ff' }}>
       <Navigation user={user} />
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }}>
+      <div
+        style={{
+          width: '100%',
+          maxWidth: step === 'interview' && mode === 'voice' ? 'none' : step === 'interview' ? '1180px' : '900px',
+          margin: '0 auto',
+          padding: step === 'interview' && mode === 'voice' ? '16px' : '32px 20px',
+          boxSizing: 'border-box'
+        }}
+      >
         {step === 'setup' && (
           <div style={{ background: 'white', borderRadius: '15px', padding: '40px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
             <h1 style={{ fontSize: '32px', marginBottom: '30px', color: '#333' }}>AI Mock Interview</h1>
@@ -457,121 +600,131 @@ function RealTimeInterview({ user }) {
         )}
 
         {step === 'interview' && mode === 'chat' && (
-          <div style={{ position: 'relative', background: 'white', borderRadius: '15px', padding: '30px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', height: '70vh', display: 'flex', flexDirection: 'column' }}>
-            {/* Webcam Tile */}
-            <div style={{ position: 'absolute', bottom: '30px', right: '30px', width: '200px', height: '150px', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 5px 15px rgba(0,0,0,0.3)', border: '3px solid white', backgroundColor: '#000', zIndex: 10 }}>
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '15px', borderBottom: '2px solid #f0f0f0' }}>
-              <div>
-                <h2 style={{ margin: 0, color: '#667eea', fontSize: '24px' }}>AI Interviewer</h2>
-                <p style={{ margin: '5px 0 0 0', color: '#999', fontSize: '14px' }}>{role} - {difficulty}</p>
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ background: '#10b981', color: 'white', padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold' }}>
-                  Question {questionCount}/5
+          <div className="interview-room">
+            <main className="conversation-panel">
+              <div className="room-header">
+                <div>
+                  <h2 style={{ margin: 0, color: '#1f2937', fontSize: '24px' }}>AI Interviewer</h2>
+                  <p style={{ margin: '5px 0 0 0', color: '#6b7280', fontSize: '14px' }}>{role} - {difficulty}</p>
                 </div>
-                <div style={{ background: '#111827', color: 'white', padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold' }}>
-                  {statusText}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px', padding: '10px' }}>
-              {messages.map((message, index) => (
-                <div key={index} style={{ display: 'flex', justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start', marginBottom: '15px' }}>
-                  <div
-                    style={{
-                      maxWidth: '70%',
-                      padding: '12px 18px',
-                      borderRadius: message.type === 'user' ? '18px 18px 0 18px' : '18px 18px 18px 0',
-                      background: message.type === 'user' ? '#667eea' : '#f0f0f0',
-                      color: message.type === 'user' ? 'white' : '#333',
-                      fontSize: '15px',
-                      lineHeight: '1.5'
-                    }}
-                  >
-                    {message.text}
+                <div className="status-row">
+                  <div style={{ background: '#10b981', color: 'white', padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold' }}>
+                    Question {questionCount}/5
+                  </div>
+                  <div style={{ background: '#111827', color: 'white', padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold' }}>
+                    {statusText}
                   </div>
                 </div>
-              ))}
-              {isAITyping && (
-                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
-                  <div style={{ padding: '12px 18px', borderRadius: '18px 18px 18px 0', background: '#f0f0f0', color: '#999' }}>
-                    AI is thinking...
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+              </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={isListening ? stopListening : startListening}
-                disabled={isAITyping}
-                style={{
-                  padding: '12px 20px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  background: isListening ? '#dc3545' : '#28a745',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '10px',
-                  cursor: isAITyping ? 'not-allowed' : 'pointer',
-                  opacity: isAITyping ? 0.5 : 1
-                }}
-              >
-                {isListening ? 'Stop' : 'Speak'}
-              </button>
-              <textarea
-                value={userInput}
-                onChange={(event) => setUserInput(event.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="Type or speak your answer..."
-                disabled={isAITyping || isListening}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  fontSize: '15px',
-                  borderRadius: '10px',
-                  border: '2px solid #ddd',
-                  resize: 'none',
-                  minHeight: '60px',
-                  fontFamily: 'inherit',
-                  opacity: isListening ? 0.5 : 1
-                }}
-              />
-              <button
-                onClick={() => sendMessage()}
-                disabled={!userInput.trim() || isAITyping || isListening}
-                style={{
-                  padding: '12px 24px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  background: userInput.trim() && !isAITyping && !isListening ? '#667eea' : '#ccc',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '10px',
-                  cursor: userInput.trim() && !isAITyping && !isListening ? 'pointer' : 'not-allowed'
-                }}
-              >
-                Send
-              </button>
-            </div>
+              <div className="message-list">
+                {messages.map((message, index) => (
+                  <div key={index} style={{ display: 'flex', justifyContent: message.type === 'user' ? 'flex-end' : 'flex-start', marginBottom: '15px' }}>
+                    <div
+                      style={{
+                        maxWidth: '78%',
+                        padding: '12px 18px',
+                        borderRadius: message.type === 'user' ? '18px 18px 0 18px' : '18px 18px 18px 0',
+                        background: message.type === 'user' ? '#4f46e5' : '#f3f4f6',
+                        color: message.type === 'user' ? 'white' : '#1f2937',
+                        fontSize: '15px',
+                        lineHeight: '1.5'
+                      }}
+                    >
+                      {message.text}
+                    </div>
+                  </div>
+                ))}
+                {isAITyping && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' }}>
+                    <div style={{ padding: '12px 18px', borderRadius: '18px 18px 18px 0', background: '#f3f4f6', color: '#6b7280' }}>
+                      AI is thinking...
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="chat-input-row">
+                <button
+                  onClick={isListening ? stopListening : startListening}
+                  disabled={isAITyping}
+                  style={{
+                    padding: '12px 20px',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    background: isListening ? '#dc3545' : '#16a34a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    cursor: isAITyping ? 'not-allowed' : 'pointer',
+                    opacity: isAITyping ? 0.5 : 1
+                  }}
+                >
+                  {isListening ? 'Stop' : 'Speak'}
+                </button>
+                <textarea
+                  value={userInput}
+                  onChange={(event) => setUserInput(event.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Type or speak your answer..."
+                  disabled={isAITyping || isListening}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    fontSize: '15px',
+                    borderRadius: '10px',
+                    border: '1px solid #d1d5db',
+                    resize: 'none',
+                    minHeight: '60px',
+                    fontFamily: 'inherit',
+                    opacity: isListening ? 0.5 : 1
+                  }}
+                />
+                <button
+                  onClick={() => sendMessage()}
+                  disabled={!userInput.trim() || isAITyping || isListening}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    background: userInput.trim() && !isAITyping && !isListening ? '#4f46e5' : '#cbd5e1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    cursor: userInput.trim() && !isAITyping && !isListening ? 'pointer' : 'not-allowed'
+                  }}
+                >
+                  Send
+                </button>
+              </div>
+            </main>
+
+            <aside className="side-panel">
+              {renderCameraTile()}
+              <div className="interview-info-card">
+                <h3>Session</h3>
+                <div className="info-line">
+                  <span>Mode</span>
+                  <strong>Chat</strong>
+                </div>
+                <div className="info-line">
+                  <span>Difficulty</span>
+                  <strong>{difficulty}</strong>
+                </div>
+                <div className="info-line">
+                  <span>Status</span>
+                  <strong>{statusText}</strong>
+                </div>
+              </div>
+            </aside>
           </div>
         )}
 
         {step === 'interview' && mode === 'voice' && (
-          <div style={{ position: 'relative', background: 'white', borderRadius: '15px', padding: '40px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+          <div className="voice-fullscreen-card">
             {/* Webcam Tile */}
-            <div style={{ position: 'absolute', bottom: '30px', right: '30px', width: '200px', height: '150px', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 5px 15px rgba(0,0,0,0.3)', border: '3px solid white', backgroundColor: '#000', zIndex: 10 }}>
+            <div className="voice-camera-wide">
               <video
                 ref={videoRef}
                 autoPlay
@@ -581,11 +734,12 @@ function RealTimeInterview({ user }) {
               />
             </div>
 
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <div className="voice-main-area">
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
               <div
                 style={{
-                  width: '150px',
-                  height: '150px',
+                  width: '128px',
+                  height: '128px',
                   margin: '0 auto 20px',
                   borderRadius: '50%',
                   background: isSpeaking ? 'linear-gradient(135deg, #667eea, #764ba2)' : '#f0f0f0',
@@ -598,6 +752,15 @@ function RealTimeInterview({ user }) {
               >
                 AI
               </div>
+              
+              {isSpeaking && (
+                <button 
+                  onClick={() => { synthRef.current.cancel(); isSpeakingRef.current = false; setIsSpeaking(false); setStatusText('Listening'); startRecognition(); }}
+                  style={{ background: '#ff4757', color: 'white', border: 'none', borderRadius: '20px', padding: '5px 15px', fontSize: '12px', cursor: 'pointer', marginBottom: '10px' }}
+                >
+                  Interrupt AI
+                </button>
+              )}
               <h2 style={{ margin: '0 0 10px 0', color: '#333', fontSize: '28px' }}>AI Interviewer</h2>
               <p style={{ margin: 0, color: '#666', fontSize: '16px' }}>{role} - {difficulty}</p>
               <div style={{ marginTop: '15px' }}>
@@ -630,14 +793,24 @@ function RealTimeInterview({ user }) {
               <p style={{ marginTop: '12px', color: '#4b5563', fontWeight: 'bold' }}>Status: {statusText}</p>
             </div>
 
-            {transcript && (
+            {(transcript || interimText) && (
               <div style={{ background: '#f0f9ff', padding: '20px', borderRadius: '10px', marginBottom: '20px', border: '2px solid #667eea' }}>
-                <p style={{ margin: 0, color: '#667eea', fontWeight: 'bold', marginBottom: '10px' }}>You are saying:</p>
-                <p style={{ margin: 0, color: '#333', fontSize: '16px' }}>{transcript}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <p style={{ margin: 0, color: '#667eea', fontWeight: 'bold' }}>You are saying:</p>
+                  <button 
+                    onClick={() => { if(silenceTimerRef.current) clearTimeout(silenceTimerRef.current); processVoiceResponse(); }}
+                    style={{ background: '#667eea', color: 'white', border: 'none', borderRadius: '5px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                  >
+                    Send Now 🚀
+                  </button>
+                </div>
+                <p style={{ margin: 0, color: '#333', fontSize: '16px' }}>
+                  {transcript} <span style={{ color: '#999', fontStyle: 'italic' }}>{interimText}</span>
+                </p>
               </div>
             )}
 
-            <div style={{ maxHeight: '300px', overflowY: 'auto', background: '#f8f9fa', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+            <div className="voice-fullscreen-log">
               <h3 style={{ margin: '0 0 15px 0', color: '#666', fontSize: '14px' }}>Conversation Log:</h3>
               {messages.map((message, index) => (
                 <div key={index} style={{ marginBottom: '10px', padding: '10px', borderRadius: '8px', background: message.type === 'ai' ? '#e3f2fd' : '#f1f8e9', borderLeft: `4px solid ${message.type === 'ai' ? '#667eea' : '#28a745'}` }}>
@@ -648,18 +821,10 @@ function RealTimeInterview({ user }) {
                 </div>
               ))}
             </div>
+            </div>
 
             <button
-              onClick={() => {
-                if (recognitionRef.current) {
-                  recognitionRef.current.stop();
-                }
-                synthRef.current.cancel();
-                if (streamRef.current) {
-                  streamRef.current.getTracks().forEach(track => track.stop());
-                }
-                navigate('/dashboard');
-              }}
+              onClick={endInterview}
               style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold', background: '#dc3545', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}
             >
               End Interview
@@ -701,9 +866,7 @@ function RealTimeInterview({ user }) {
 
             <button
               onClick={() => {
-                if (streamRef.current) {
-                  streamRef.current.getTracks().forEach(track => track.stop());
-                }
+                cleanupInterviewSession();
                 navigate('/dashboard');
               }}
               style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold', background: '#667eea', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}
@@ -715,9 +878,259 @@ function RealTimeInterview({ user }) {
       </div>
 
       <style>{`
+        .interview-room {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 320px;
+          gap: 20px;
+          align-items: stretch;
+        }
+
+        .conversation-panel,
+        .voice-panel,
+        .side-panel {
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 14px;
+          box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+        }
+
+        .conversation-panel {
+          min-height: 72vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .voice-panel {
+          padding: 34px;
+        }
+
+        .side-panel {
+          padding: 18px;
+          align-self: start;
+          position: sticky;
+          top: 18px;
+        }
+
+        .room-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          padding: 22px 24px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .status-row {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+
+        .message-list {
+          flex: 1;
+          overflow-y: auto;
+          padding: 22px 24px;
+          background: #f8fafc;
+        }
+
+        .chat-input-row {
+          display: flex;
+          gap: 10px;
+          padding: 18px;
+          border-top: 1px solid #e5e7eb;
+          background: #ffffff;
+        }
+
+        .interview-camera-card {
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          background: #ffffff;
+          overflow: hidden;
+        }
+
+        .camera-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 14px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #374151;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .camera-live-dot {
+          color: #16a34a;
+          font-size: 12px;
+        }
+
+        .camera-frame {
+          width: 100%;
+          aspect-ratio: 16 / 11;
+          background: #020617;
+        }
+
+        .camera-meta {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          padding: 12px 14px;
+          color: #111827;
+        }
+
+        .camera-meta span {
+          color: #6b7280;
+          font-size: 13px;
+        }
+
+        .interview-info-card {
+          margin-top: 16px;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 16px;
+          background: #f8fafc;
+        }
+
+        .interview-info-card h3 {
+          margin: 0 0 14px;
+          color: #111827;
+          font-size: 16px;
+        }
+
+        .info-line {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 10px 0;
+          border-top: 1px solid #e5e7eb;
+          color: #6b7280;
+          font-size: 14px;
+        }
+
+        .info-line strong {
+          color: #111827;
+          text-align: right;
+        }
+
+        .voice-status-row {
+          display: flex;
+          justify-content: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-top: 15px;
+        }
+
+        .voice-log {
+          max-height: 300px;
+          overflow-y: auto;
+          background: #f8fafc;
+          padding: 18px;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          margin-bottom: 20px;
+        }
+
+        .voice-fullscreen-card {
+          width: 100%;
+          min-height: calc(100vh - 92px);
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 18px;
+          box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+          box-sizing: border-box;
+          display: grid;
+          grid-template-columns: minmax(360px, 42vw) minmax(0, 1fr);
+          grid-template-rows: 1fr auto;
+          gap: 18px;
+        }
+
+        .voice-camera-wide {
+          min-height: calc(100vh - 148px);
+          border-radius: 14px;
+          overflow: hidden;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+          border: 1px solid #e5e7eb;
+          background: #020617;
+        }
+
+        .voice-main-area {
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .voice-fullscreen-log {
+          flex: 1;
+          min-height: 160px;
+          overflow-y: auto;
+          background: #f8fafc;
+          padding: 20px;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          margin-bottom: 20px;
+        }
+
+        .voice-fullscreen-card > button {
+          grid-column: 1 / -1;
+        }
+
         @keyframes pulse {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.05); }
+        }
+
+        @media (max-width: 920px) {
+          .interview-room {
+            grid-template-columns: 1fr;
+          }
+
+          .voice-fullscreen-card {
+            min-height: auto;
+            grid-template-columns: 1fr;
+          }
+
+          .voice-camera-wide {
+            min-height: 320px;
+            aspect-ratio: 16 / 10;
+          }
+
+          .side-panel {
+            position: static;
+            order: -1;
+          }
+
+          .conversation-panel {
+            min-height: 68vh;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .room-header,
+          .chat-input-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .status-row {
+            justify-content: flex-start;
+          }
+
+          .voice-panel {
+            padding: 22px;
+          }
+
+          .voice-fullscreen-card {
+            padding: 12px;
+            border-radius: 12px;
+          }
+
+          .voice-camera-wide {
+            min-height: 240px;
+          }
         }
       `}</style>
     </div>

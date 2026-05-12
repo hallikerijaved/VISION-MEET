@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import { API_URL, SOCKET_URL } from '../utils/api';
 import './GDRoom.css';
-
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
-const API_URL   = process.env.REACT_APP_API_URL    || 'http://localhost:5001/api';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -12,6 +11,10 @@ const ICE_SERVERS = {
     { urls: 'stun:stun1.l.google.com:19302' },
   ],
 };
+
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const mediaRequiresSecureOrigin = !window.isSecureContext && !isLocalhost;
+const secureMediaMessage = `Camera and microphone need a secure browser origin. Open this app at http://localhost:3000 on this computer, or use an HTTPS deployment/tunnel for other devices. Current URL: ${window.location.origin}`;
 
 /* ── tiny helper: attach stream to <video> ── */
 const RemoteVideo = ({ stream, name }) => {
@@ -40,14 +43,18 @@ export default function GDRoom({ user }) {
   const [isScreenShare,  setIsScreenShare]  = useState(false);
   const [isVoiceMode,    setIsVoiceMode]    = useState(false);
   const [isListening,    setIsListening]    = useState(false);
-  const [transcript,     setTranscript]     = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [contributions,  setContributions]  = useState([]);
+  const contributionsRef = useRef([]);
   const [evaluation,     setEvaluation]     = useState(null);
   const [showEval,       setShowEval]       = useState(false);
   const [evaluating,     setEvaluating]     = useState(false);
   const [copied,         setCopied]         = useState(false);
   const [isChatOpen,     setIsChatOpen]     = useState(false);
   const [unreadCount,    setUnreadCount]    = useState(0);
+  const [isModerator,    setIsModerator]    = useState(false);
+  const [gdIdMongo,      setGdIdMongo]      = useState(null);
+  const [gdTopic,        setGdTopic]        = useState(`GD Room ${roomId}`);
 
   /* ── stable refs (never cause re-renders) ── */
   const socketRef       = useRef(null);
@@ -55,16 +62,16 @@ export default function GDRoom({ user }) {
   const localStreamRef  = useRef(null);
   const screenStreamRef = useRef(null);
   const pcsRef          = useRef({});          // { socketId: RTCPeerConnection }
-  const recognitionRef  = useRef(null);
   const silenceRef      = useRef(null);
-  const transcriptRef   = useRef('');
   const messagesEndRef  = useRef(null);
   const isChatOpenRef   = useRef(false);
+
+  const { transcript: speechTranscript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
   /* scroll chat to bottom */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, transcript]);
+  }, [messages, speechTranscript]);
 
   /* ════════════════════════════════════════════
      createPC — always reads localStreamRef.current
@@ -111,15 +118,24 @@ export default function GDRoom({ user }) {
     socketRef.current = socket;
 
     /* 1. get media FIRST, then join room */
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        localStreamRef.current = stream;
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      })
-      .catch(err => console.warn('Camera/mic denied:', err))
-      .finally(() => {
-        socket.emit('join-room', { roomId, userName: user.name });
-      });
+    if (mediaRequiresSecureOrigin || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.warn(secureMediaMessage);
+      alert(`${secureMediaMessage}\n\nYou will join without video/audio.`);
+      socket.emit('join-room', { roomId, userName: user.name });
+    } else {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+          localStreamRef.current = stream;
+          if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+          if (browserSupportsSpeechRecognition) {
+            startVoiceMode();
+          }
+        })
+        .catch(err => console.warn('Camera/mic denied:', err))
+        .finally(() => {
+          socket.emit('join-room', { roomId, userName: user.name });
+        });
+    }
 
     /* ── signalling ── */
 
@@ -168,9 +184,52 @@ export default function GDRoom({ user }) {
       }
     });
 
-    socket.on('session-closed', () => {
-      alert('Session has been closed.');
-      navigate('/dashboard');
+    socket.on('session-closed', async () => {
+      alert('The moderator has ended the session.');
+      if (contributionsRef.current.length > 0) {
+        try {
+          setEvaluating(true);
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${API_URL}/evaluation/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ 
+              gdId: roomId, 
+              gdTitle: gdTopic, 
+              messageCount: contributionsRef.current.length, 
+              speakingTime: 0, 
+              contributions: contributionsRef.current 
+            }),
+          });
+          const data = await res.json();
+          if (data.success) { 
+            setEvaluation(data.evaluation); 
+            setShowEval(true); 
+          } else {
+            navigate('/dashboard');
+          }
+        } catch (_) {
+          navigate('/dashboard');
+        } finally {
+          setEvaluating(false);
+        }
+      } else {
+        navigate('/dashboard');
+      }
+    });
+
+    /* fetch gd details to check moderator */
+    import('../utils/api').then(({ gd }) => {
+      gd.getAll().then(res => {
+        const cur = res.data.find(g => g.roomId === roomId);
+        if (cur) {
+          setGdIdMongo(cur._id);
+          setGdTopic(cur.title || `GD Room ${roomId}`);
+          if (cur.moderator._id === user.id || cur.moderator === user.id) {
+            setIsModerator(true);
+          }
+        }
+      }).catch(() => {});
     });
 
     return () => {
@@ -178,7 +237,6 @@ export default function GDRoom({ user }) {
       pcsRef.current = {};
       localStreamRef.current?.getTracks().forEach(t => t.stop());
       screenStreamRef.current?.getTracks().forEach(t => t.stop());
-      recognitionRef.current?.stop();
       clearTimeout(silenceRef.current);
       socket.disconnect();
     };
@@ -191,15 +249,17 @@ export default function GDRoom({ user }) {
     if (!newMessage.trim()) return;
     const msg = { roomId, message: newMessage, sender: user.name, timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
     socketRef.current.emit('send-message', msg);
-    setContributions(p => [...p, newMessage]);
+    // Removed appending to contributionsRef because we only evaluate speech now.
     setNewMessage('');
   };
 
   const sendVoiceMsg = text => {
     if (!text.trim()) return;
-    const msg = { roomId, message: text, sender: user.name, timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
-    socketRef.current.emit('send-message', msg);
-    setContributions(p => [...p, text]);
+    // We intentionally DO NOT emit this as a chat message.
+    // It is quietly added to contributions for evaluation.
+    const newContribs = [...contributionsRef.current, text];
+    setContributions(newContribs);
+    contributionsRef.current = newContribs;
   };
 
   const toggleChat = () => {
@@ -218,10 +278,22 @@ export default function GDRoom({ user }) {
   };
   const toggleAudio = () => {
     const t = localStreamRef.current?.getAudioTracks()[0];
-    if (t) { t.enabled = !t.enabled; setIsAudioOn(t.enabled); }
+    if (t) { 
+      t.enabled = !t.enabled; 
+      setIsAudioOn(t.enabled); 
+      if (t.enabled && browserSupportsSpeechRecognition) {
+        startVoiceMode();
+      } else {
+        stopVoiceMode();
+      }
+    }
   };
 
   const startScreenShare = async () => {
+    if (mediaRequiresSecureOrigin || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      alert(`Screen sharing is blocked. ${secureMediaMessage}`);
+      return;
+    }
     try {
       const ss = await navigator.mediaDevices.getDisplayMedia({ video: true });
       screenStreamRef.current = ss;
@@ -240,6 +312,9 @@ export default function GDRoom({ user }) {
     screenStreamRef.current?.getTracks().forEach(t => t.stop());
     screenStreamRef.current = null;
     setIsScreenShare(false);
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    
     try {
       const cam = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = cam;
@@ -252,69 +327,68 @@ export default function GDRoom({ user }) {
     } catch (_) {}
   };
 
-  /* ── voice mode ── */
+  /* ── voice mode (react-speech-recognition) ── */
   const startVoiceMode = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert('Use Chrome or Edge for voice mode.'); return; }
-    const r = new SR();
-    r.continuous = true; r.interimResults = true; r.lang = 'en-US';
-    recognitionRef.current = r;
-    r.onstart = () => { setIsVoiceMode(true); setIsListening(true); };
-    r.onresult = event => {
-      let currentInterim = '';
-      let newlyFinal = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) newlyFinal += t + ' '; else currentInterim += t;
-      }
-      if (newlyFinal) {
-        transcriptRef.current = (transcriptRef.current + newlyFinal).trim() + ' ';
-      }
-      setTranscript(transcriptRef.current + currentInterim);
-      clearTimeout(silenceRef.current);
-      silenceRef.current = setTimeout(() => {
-        const txt = transcriptRef.current.trim();
-        if (txt) { 
-          sendVoiceMsg(txt); 
-          transcriptRef.current = '';
-          setTranscript('');
-        }
-      }, 2000);
-    };
-    r.onerror = e => { if (e.error !== 'no-speech') console.error(e.error); };
-    r.onend = () => { if (recognitionRef.current) r.start(); };
-    r.start();
+    if (!browserSupportsSpeechRecognition) return;
+    setIsVoiceMode(true);
+    setIsListening(true);
+    resetTranscript();
+    SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
   };
 
   const stopVoiceMode = () => {
-    recognitionRef.current?.stop(); recognitionRef.current = null;
-    clearTimeout(silenceRef.current);
-    setIsVoiceMode(false); setIsListening(false); 
-    transcriptRef.current = '';
-    setTranscript('');
+    SpeechRecognition.stopListening();
+    setIsVoiceMode(false);
+    setIsListening(false);
+    if (speechTranscript.trim()) {
+      sendVoiceMsg(speechTranscript.trim());
+    }
+    resetTranscript();
   };
+
+  useEffect(() => {
+    if (isVoiceMode && speechTranscript) {
+      clearTimeout(silenceRef.current);
+      silenceRef.current = setTimeout(() => {
+        if (speechTranscript.trim()) {
+          sendVoiceMsg(speechTranscript.trim());
+          resetTranscript();
+        }
+      }, 2000);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speechTranscript, isVoiceMode, resetTranscript]);
 
   /* ── evaluation ── */
   const generateEvaluation = async () => {
-    if (!contributions.length) return;
+    if (!contributionsRef.current.length) return false;
     setEvaluating(true);
+    let success = false;
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/evaluation/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ gdId: roomId, gdTitle: `GD Room ${roomId}`, messageCount: contributions.length, speakingTime: 0, contributions }),
+        body: JSON.stringify({ gdId: roomId, gdTitle: gdTopic, messageCount: contributionsRef.current.length, speakingTime: 0, contributions: contributionsRef.current }),
       });
       const data = await res.json();
-      if (data.success) { setEvaluation(data.evaluation); setShowEval(true); }
+      if (data.success) { 
+        setEvaluation(data.evaluation); 
+        setShowEval(true); 
+        success = true;
+      }
     } catch (_) {}
     setEvaluating(false);
+    return success;
   };
 
   const leaveRoom = async () => {
     stopVoiceMode();
     socketRef.current?.emit('leave-room', roomId);
-    if (contributions.length) await generateEvaluation();
+    let evalSuccess = false;
+    if (contributionsRef.current.length) {
+      evalSuccess = await generateEvaluation();
+    }
     try {
       const { gd } = await import('../utils/api');
       const res = await gd.getAll();
@@ -322,7 +396,22 @@ export default function GDRoom({ user }) {
       if (cur) await gd.leave(cur._id);
     } catch (_) {}
     localStreamRef.current?.getTracks().forEach(t => t.stop());
-    if (!showEval) navigate('/dashboard');
+    if (!evalSuccess) {
+      navigate('/dashboard');
+    }
+  };
+
+  const endSession = async () => {
+    if (!window.confirm('Are you sure you want to end this session for everyone?')) return;
+    try {
+      const { gd } = await import('../utils/api');
+      if (gdIdMongo) {
+        await gd.end(gdIdMongo);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to end session.');
+    }
   };
 
   const sc = s => s >= 75 ? '#10b981' : s >= 60 ? '#f59e0b' : '#ef4444';
@@ -336,37 +425,91 @@ export default function GDRoom({ user }) {
       {/* ── Evaluation modal ── */}
       {showEval && evaluation && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>🎯 Communication Score</h2>
-            <div className="score-display">
-              <span className="score-value" style={{ color: sc(evaluation.scores.totalScore) }}>{evaluation.scores.totalScore}</span>
-              <span className="score-max">/100</span>
+          <div className="modal-content" style={{ maxWidth: '850px', width: '90%', padding: '2.5rem', background: 'linear-gradient(145deg, #ffffff, #f8fafc)', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+              <h2 style={{ fontSize: '2.2rem', color: '#0f172a', margin: '0 0 0.5rem 0', fontWeight: '800', letterSpacing: '-0.5px' }}>Performance Evaluation</h2>
+              <p style={{ color: '#64748b', margin: 0, fontSize: '1.1rem' }}>AI-generated insights based on your spoken communication</p>
             </div>
-            <div className="score-grid">
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '3rem' }}>
+              <div style={{ position: 'relative', width: '180px', height: '180px', borderRadius: '50%', background: `conic-gradient(${sc(evaluation.scores.finalScore)} ${evaluation.scores.finalScore}%, #e2e8f0 0)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
+                <div style={{ width: '150px', height: '150px', borderRadius: '50%', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)' }}>
+                  <span style={{ fontSize: '3.5rem', fontWeight: '900', color: sc(evaluation.scores.finalScore), lineHeight: '1', letterSpacing: '-1px' }}>{Math.round(evaluation.scores.finalScore)}</span>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginTop: '6px', letterSpacing: '1px' }}>Overall</span>
+                </div>
+              </div>
+            </div>
+
+            {evaluation.matchedKeywords && evaluation.matchedKeywords.length > 0 && (
+              <div style={{ marginBottom: '3rem', textAlign: 'center', background: '#f1f5f9', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ fontSize: '0.9rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                  Keywords Matched
+                </h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', justifyContent: 'center' }}>
+                  {evaluation.matchedKeywords.map((kw, i) => (
+                    <span key={i} style={{ background: '#fff', color: '#4f46e5', padding: '0.5rem 1rem', borderRadius: '30px', fontSize: '0.9rem', fontWeight: '600', border: '1px solid #c7d2fe', boxShadow: '0 2px 4px rgba(79, 70, 229, 0.05)', transition: 'all 0.2s', cursor: 'default' }} onMouseOver={e => {e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(79, 70, 229, 0.1)'}} onMouseOut={e => {e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(79, 70, 229, 0.05)'}}>
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
               {[
-                ['Clarity', evaluation.scores.clarity, 'clarity'], 
-                ['Relevance', evaluation.scores.relevance, 'relevance'], 
-                ['Engagement', evaluation.scores.engagement, 'engagement'], 
-                ['Professionalism', evaluation.scores.professionalism, 'professionalism']
-              ].map(([l, v, className]) => (
-                <div key={l} className={`score-card ${className}`}>
-                  <div className="score-card-label">{l}</div>
-                  <div className="score-card-value">{v}/25</div>
+                ['Topic Relevance', evaluation.scores.topicRelevance, '🎯'], 
+                ['Semantic Match', evaluation.scores.semanticSimilarity, '🧠'], 
+                ['Keyword Usage', evaluation.scores.keywordMatching, '🔑'], 
+                ['Sentiment Score', evaluation.scores.sentimentScore, '😊'],
+                ['Grammar Quality', evaluation.scores.grammarQuality, '📝'],
+                ['Communication', evaluation.scores.communicationQuality, '🗣️']
+              ].map(([l, v, icon]) => (
+                <div key={l} style={{ background: '#fff', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>{icon} {l}</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: '800', color: sc(v) }}>{Math.round(v)}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: `${v}%`, height: '100%', background: sc(v), borderRadius: '4px', transition: 'width 1.5s cubic-bezier(0.22, 1, 0.36, 1)' }}></div>
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="feedback-text">
-              {evaluation.feedback}
-            </div>
-            {evaluation.blockchainCertificate && (
-              <div className="certificate-box">
-                <strong>🏆 Certificate Issued!</strong>
-                <div className="certificate-id">ID: {evaluation.blockchainCertificate.certificateId}</div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+              <div style={{ background: 'linear-gradient(to bottom right, #f0fdf4, #ecfdf5)', border: '1px solid #a7f3d0', padding: '1.8rem', borderRadius: '20px', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.05)' }}>
+                <h4 style={{ margin: '0 0 1.2rem 0', color: '#059669', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem' }}><span>🌟</span> Strengths</h4>
+                <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.95rem', color: '#065f46', display: 'flex', flexDirection: 'column', gap: '0.8rem', lineHeight: '1.5' }}>
+                  {evaluation.strengths?.length > 0 ? evaluation.strengths.map((s, i) => <li key={i}>{s}</li>) : <li>No significant strengths detected.</li>}
+                </ul>
               </div>
-            )}
-            <button className="btn-modal-close" onClick={() => { setShowEval(false); navigate('/dashboard'); }}>
-              Close & Go to Dashboard
-            </button>
+              <div style={{ background: 'linear-gradient(to bottom right, #fef2f2, #fff1f2)', border: '1px solid #fecaca', padding: '1.8rem', borderRadius: '20px', boxShadow: '0 4px 6px -1px rgba(239, 68, 68, 0.05)' }}>
+                <h4 style={{ margin: '0 0 1.2rem 0', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem' }}><span>📈</span> Areas to Improve</h4>
+                <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.95rem', color: '#991b1b', display: 'flex', flexDirection: 'column', gap: '0.8rem', lineHeight: '1.5' }}>
+                  {evaluation.weaknesses?.length > 0 ? evaluation.weaknesses.map((w, i) => <li key={i}>{w}</li>) : <li>No significant weaknesses detected.</li>}
+                </ul>
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '1.8rem', borderRadius: '20px', marginBottom: '2.5rem', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+              <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.1rem' }}><span>💡</span> Actionable Feedback</h4>
+              <p style={{ margin: '0 0 1.2rem 0', color: '#334155', fontSize: '1rem', lineHeight: '1.6' }}>{evaluation.feedback}</p>
+              <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.95rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {evaluation.improvements?.map((imp, i) => <li key={i}>{imp}</li>)}
+              </ul>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <button 
+                onClick={() => { setShowEval(false); navigate('/dashboard'); }}
+                style={{ padding: '1.2rem 3rem', background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white', border: 'none', borderRadius: '50px', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.4)', transition: 'all 0.2s', letterSpacing: '0.5px' }}
+                onMouseOver={e => {e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 15px 30px -5px rgba(37, 99, 235, 0.5)'}}
+                onMouseOut={e => {e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(37, 99, 235, 0.4)'}}
+              >
+                Close & Return to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -377,9 +520,16 @@ export default function GDRoom({ user }) {
           <span className="room-title">GD Room: {roomId}</span>
           <span className="participant-count">{total} participant{total > 1 ? 's' : ''}</span>
         </div>
-        <button className="btn-danger-outline" onClick={leaveRoom} disabled={evaluating}>
-          {evaluating ? 'Evaluating…' : 'Leave Room'}
-        </button>
+        <div style={{display: 'flex', gap: '10px'}}>
+          {isModerator && (
+            <button className="btn-danger-outline" onClick={endSession} disabled={evaluating} style={{ background: '#ef4444', color: 'white', border: 'none' }}>
+              End Session
+            </button>
+          )}
+          <button className="btn-danger-outline" onClick={leaveRoom} disabled={evaluating}>
+            {evaluating ? 'Evaluating…' : 'Leave Room'}
+          </button>
+        </div>
       </header>
 
       <div className="gd-main">
@@ -450,10 +600,10 @@ export default function GDRoom({ user }) {
               <div className="empty-chat">Say hello to the group! 👋</div>
             )}
             
-            {isVoiceMode && transcript && (
+            {isVoiceMode && speechTranscript && (
               <div className="transcript-preview">
                 <div className="transcript-label">🎙️ Speaking...</div>
-                <div className="transcript-text">{transcript}</div>
+                <div className="transcript-text">{speechTranscript}</div>
               </div>
             )}
             
@@ -477,18 +627,9 @@ export default function GDRoom({ user }) {
                 className="chat-input"
                 value={newMessage} 
                 onChange={e => setNewMessage(e.target.value)}
-                placeholder={isVoiceMode ? 'Voice mode on...' : 'Type a message...'}
-                disabled={isVoiceMode}
+                placeholder={isVoiceMode ? 'Listening to voice...' : 'Type a message...'}
               />
-              <button 
-                type="button" 
-                className={`btn-voice-chat ${isVoiceMode ? 'active' : ''}`}
-                onClick={isVoiceMode ? stopVoiceMode : startVoiceMode}
-                title={isVoiceMode ? 'Stop Voice Mode' : 'Start Voice Mode'}
-              >
-                {isVoiceMode ? '🔴' : '🎙️'}
-              </button>
-              <button type="submit" className="btn-send" disabled={isVoiceMode || !newMessage.trim()}>
+              <button type="submit" className="btn-send" disabled={!newMessage.trim()}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"></line>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>

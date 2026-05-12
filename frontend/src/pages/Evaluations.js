@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const API_URL = `http://${window.location.hostname}:5001/api`;
 
 const Evaluations = ({ user }) => {
   const [evaluations, setEvaluations] = useState([]);
@@ -30,7 +30,7 @@ const Evaluations = ({ user }) => {
       <Navigation user={user} />
       <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>
         <h1>📊 My GD Evaluations</h1>
-        <p style={{ color: '#666', marginBottom: '2rem' }}>AI-powered communication scores with blockchain certificates</p>
+        <p style={{ color: '#666', marginBottom: '2rem' }}>AI-powered communication scores</p>
 
         {evaluations.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', background: '#f8f9fa', borderRadius: '8px' }}>
@@ -51,40 +51,57 @@ const Evaluations = ({ user }) => {
                     <p style={{ color: '#666', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>{new Date(ev.createdAt).toLocaleString()}</p>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: getColor(ev.scores.totalScore) }}>{ev.scores.totalScore}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#666' }}>{getLabel(ev.scores.totalScore)}</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: getColor(ev.scores.finalScore) }}>{ev.scores.finalScore}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#666' }}>{getLabel(ev.scores.finalScore)}</div>
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                  {[['Clarity', ev.scores.clarity, '#e3f2fd'], ['Relevance', ev.scores.relevance, '#e8f5e9'], ['Engagement', ev.scores.engagement, '#fff3e0'], ['Professionalism', ev.scores.professionalism, '#fce4ec']].map(([label, val, bg]) => (
+                  {[
+                    ['Topic Relevance', ev.scores.topicRelevance, '#e3f2fd'], 
+                    ['Semantic Similarity', ev.scores.semanticSimilarity, '#e8f5e9'], 
+                    ['Keyword Matching', ev.scores.keywordMatching, '#fff3e0'], 
+                    ['Sentiment', ev.scores.sentimentScore, '#fce4ec'],
+                    ['Grammar', ev.scores.grammarQuality, '#e3f2fd'],
+                    ['Communication', ev.scores.communicationQuality, '#e8f5e9'],
+                    ['Participation', ev.scores.participationAnalysis, '#fff3e0'],
+                    ['Confidence', ev.scores.confidenceAnalysis, '#fce4ec']
+                  ].map(([label, val, bg]) => (
                     <div key={label} style={{ padding: '0.75rem', background: bg, borderRadius: '4px', textAlign: 'center' }}>
                       <div style={{ fontSize: '0.75rem', color: '#666' }}>{label}</div>
-                      <div style={{ fontWeight: 'bold' }}>{val}/25</div>
+                      <div style={{ fontWeight: 'bold' }}>{val}/100</div>
                     </div>
                   ))}
                 </div>
 
-                <div style={{ background: '#f8f9fa', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                  {ev.feedback}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ background: '#f8f9fa', padding: '0.75rem', borderRadius: '4px', fontSize: '0.9rem' }}>
+                    <strong>✅ Strengths</strong>
+                    <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem', color: '#28a745' }}>
+                      {ev.strengths?.map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+                  <div style={{ background: '#f8f9fa', padding: '0.75rem', borderRadius: '4px', fontSize: '0.9rem' }}>
+                    <strong>⚠️ Weaknesses</strong>
+                    <ul style={{ margin: '0.5rem 0', paddingLeft: '1.2rem', color: '#dc3545' }}>
+                      {ev.weaknesses?.map((w, i) => <li key={i}>{w}</li>)}
+                    </ul>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: '#666', marginBottom: ev.blockchainCertificate ? '1rem' : 0 }}>
+                <div style={{ background: '#e9ecef', padding: '0.75rem', borderRadius: '4px', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                  <strong>💡 Feedback & Improvements</strong>
+                  <p style={{ margin: '0.5rem 0' }}>{ev.feedback}</p>
+                  <ul style={{ margin: '0', paddingLeft: '1.2rem', color: '#666' }}>
+                    {ev.improvements?.map((imp, i) => <li key={i}>{imp}</li>)}
+                  </ul>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: '#666', marginBottom: 0 }}>
                   <span>💬 {ev.messageCount} messages</span>
                 </div>
 
-                {ev.blockchainCertificate && (
-                  <div style={{ padding: '0.75rem', background: '#d4edda', borderRadius: '4px', border: '1px solid #c3e6cb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <strong>🏆 Blockchain Certificate</strong>
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#666' }}>ID: {ev.blockchainCertificate.certificateId}</p>
-                    </div>
-                    <button onClick={() => navigate('/certificates')}
-                      style={{ padding: '0.5rem 1rem', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                      View
-                    </button>
-                  </div>
-                )}
+
               </div>
             ))}
           </div>

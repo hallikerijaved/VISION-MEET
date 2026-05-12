@@ -1,6 +1,20 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const isLocalNetworkHost = (hostname) => (
+  hostname === 'localhost' ||
+  hostname === '127.0.0.1' ||
+  hostname.startsWith('192.168.') ||
+  hostname.startsWith('10.') ||
+  /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+);
+
+export const API_URL = process.env.REACT_APP_API_URL ||
+  (isLocalNetworkHost(window.location.hostname)
+    ? `http://${window.location.hostname}:5001/api`
+    : 'http://localhost:5001/api');
+
+export const SOCKET_URL = process.env.REACT_APP_SOCKET_URL ||
+  API_URL.replace(/\/api\/?$/, '');
 
 const api = axios.create({
   baseURL: API_URL,
@@ -37,6 +51,7 @@ export const auth = {
 
 export const gd = {
   getAll: () => api.get('/gd'),
+  getConducted: () => api.get('/gd/mine/conducted'),
   create: (gdData) => api.post('/gd', gdData),
   join: (id) => api.post(`/gd/${id}/join`),
   leave: (id) => api.post(`/gd/${id}/leave`),

@@ -34,6 +34,7 @@ const ActionBtn = ({ icon, label, onClick, color }) => (
 
 const MainDashboard = ({ user }) => {
   const [gds, setGds] = useState([]);
+  const [conductedGDs, setConductedGDs] = useState([]);
   const [stats, setStats] = useState({ activeGDs: 0, totalParticipants: 0, myGDs: 0 });
   const [joiningId, setJoiningId] = useState(null);
   const [joinError, setJoinError] = useState('');
@@ -43,15 +44,17 @@ const MainDashboard = ({ user }) => {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await gd.getAll();
+      const [res, conductedRes] = await Promise.all([gd.getAll(), gd.getConducted()]);
       const all = res.data;
+      const conducted = conductedRes.data;
       const active = all.filter(g => g.isActive);
       const myGDs = all.filter(g => g.moderator._id === user.id || g.participants.some(p => p._id === user.id));
       setGds(active);
+      setConductedGDs(conducted);
       setStats({
         activeGDs: active.length,
         totalParticipants: active.reduce((s, g) => s + g.participants.length, 0),
-        myGDs: myGDs.length
+        myGDs: Math.max(myGDs.length, conducted.length)
       });
     } catch (e) {
       console.error(e);
@@ -94,6 +97,7 @@ const MainDashboard = ({ user }) => {
   };
 
   const fillPct = (g) => Math.round((g.participants.length / g.maxParticipants) * 100);
+  const formatDate = (date) => new Date(date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0f2f8', fontFamily: "'Segoe UI', sans-serif" }}>
@@ -139,6 +143,67 @@ const MainDashboard = ({ user }) => {
             <ActionBtn icon="📋" label="My Discussions" onClick={() => navigate('/my-gds')} color="#0891b2" />
             <ActionBtn icon="🔍" label="Browse All GDs" onClick={() => navigate('/browse-gds')} color="#059669" />
           </div>
+        </div>
+
+        {/* Conducted Discussions */}
+        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.75rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#374151', fontWeight: '700' }}>
+                Conducted by You
+              </h2>
+              <p style={{ margin: '0.25rem 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>
+                Your self-created GD sessions, including ended discussions.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/my-gds')}
+              style={{ padding: '0.65rem 1rem', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
+            >
+              View All
+            </button>
+          </div>
+
+          {loading ? (
+            <div style={{ color: '#9ca3af', padding: '1.5rem 0' }}>Loading your conducted GDs...</div>
+          ) : conductedGDs.length === 0 ? (
+            <div style={{ border: '1px dashed #d1d5db', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', color: '#6b7280' }}>
+              <strong style={{ color: '#374151' }}>No self-conducted GDs yet</strong>
+              <p style={{ margin: '0.5rem 0 1rem' }}>Create a GD and it will appear here after you conduct it.</p>
+              <button
+                onClick={() => navigate('/create-gd')}
+                style={{ padding: '0.7rem 1.2rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
+              >
+                Start New GD
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.85rem' }}>
+              {conductedGDs.map((g) => (
+                <div key={g._id} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1rem', background: g.isActive ? '#f8fafc' : '#ffffff' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '0.65rem' }}>
+                    <h3 style={{ margin: 0, color: '#1f2937', fontSize: '0.98rem', lineHeight: 1.35 }}>{g.title}</h3>
+                    <span style={{ flexShrink: 0, background: g.isActive ? '#dcfce7' : '#e5e7eb', color: g.isActive ? '#15803d' : '#4b5563', padding: '0.18rem 0.55rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: '800' }}>
+                      {g.isActive ? 'LIVE' : 'ENDED'}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0 0 0.8rem', color: '#6b7280', fontSize: '0.82rem', lineHeight: 1.45 }}>
+                    {g.description || 'No description provided'}
+                  </p>
+                  <div style={{ display: 'grid', gap: '0.35rem', color: '#6b7280', fontSize: '0.8rem', marginBottom: '0.9rem' }}>
+                    <span>Participants: {g.participants.length}/{g.maxParticipants}</span>
+                    <span>Conducted: {formatDate(g.createdAt)}</span>
+                  </div>
+                  <button
+                    onClick={() => g.isActive ? handleJoin(g._id, g.roomId) : navigate('/my-gds')}
+                    style={{ width: '100%', padding: '0.6rem 0.9rem', background: g.isActive ? '#4f46e5' : '#f3f4f6', color: g.isActive ? 'white' : '#374151', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
+                  >
+                    {g.isActive ? 'Rejoin GD' : 'View Details'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Live Discussions */}
@@ -259,7 +324,7 @@ const MainDashboard = ({ user }) => {
             </div>
             <div>
               <h4 style={{ color: 'white', margin: '0 0 0.75rem', fontSize: '0.95rem' }}>Features</h4>
-              {['🎥 Video Conferencing', '💬 Real-time Chat', '🤖 AI Evaluation', '🏆 Certificates'].map(f => (
+              {['🎥 Video Conferencing', '💬 Real-time Chat', '🤖 AI Evaluation'].map(f => (
                 <div key={f} style={{ fontSize: '0.85rem', marginBottom: '0.4rem' }}>{f}</div>
               ))}
             </div>

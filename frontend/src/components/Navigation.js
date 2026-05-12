@@ -105,8 +105,7 @@ const Navigation = ({ user }) => {
     { 
       type: 'dropdown', title: 'Performance', icon: '📊', 
       items: [
-        { path: '/evaluations', label: 'Evaluations', icon: '📈' },
-        { path: '/certificates', label: 'Certificates', icon: '🏆' }
+        { path: '/evaluations', label: 'Evaluations', icon: '📈' }
       ]
     }
   ];

@@ -11,7 +11,7 @@ const gdRoutes = require('./routes/gd');
 const adminRoutes = require('./routes/admin');
 const realtimeInterviewRoutes = require('./routes/realtimeInterview');
 const evaluationRoutes = require('./routes/evaluation');
-const blockchainRoutes = require('./routes/blockchain');
+
 const profileRoutes = require('./routes/profile');
 const GD = require('./models/GD');
 
@@ -22,19 +22,28 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000',
   'http://localhost:3001',
-  'http://192.168.31.5:3000',
-  'http://192.168.31.5:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://192.168.29.150:3000',
+  'http://192.168.29.150:3001',
   'https://vision-meet-tau.vercel.app'
 ].filter(Boolean);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return true;
+  if (/^http:\/\/(localhost|127\.0\.0\.1):300\d$/.test(origin)) return true;
+  if (/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:300\d$/.test(origin)) return true;
+  if (/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:300\d$/.test(origin)) return true;
+  if (/^http:\/\/172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}:300\d$/.test(origin)) return true;
+  return false;
+};
 
 const io = socketIo(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (
-        allowedOrigins.includes(origin) ||
-        /\.vercel\.app$/.test(origin)
-      ) return callback(null, true);
+      if (isAllowedOrigin(origin)) return callback(null, true);
       callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST'],
@@ -42,13 +51,11 @@ const io = socketIo(server, {
   }
 });
 
+app.set('io', io);
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.includes(origin) ||
-      /\.vercel\.app$/.test(origin)
-    ) return callback(null, true);
+    if (isAllowedOrigin(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
@@ -66,7 +73,7 @@ app.use('/api/gd', gdRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/realtime-interview', realtimeInterviewRoutes);
 app.use('/api/evaluation', evaluationRoutes);
-app.use('/api/blockchain', blockchainRoutes);
+
 app.use('/api/profile', profileRoutes);
 
 // Socket.IO events

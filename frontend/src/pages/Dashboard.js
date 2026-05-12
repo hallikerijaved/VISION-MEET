@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gd } from '../utils/api';
+import io from 'socket.io-client';
+import Navigation from '../components/Navigation';
+
+const SOCKET_URL = `http://${window.location.hostname}:5001`;
 
 const Dashboard = ({ user }) => {
   const [gds, setGds] = useState([]);
@@ -10,6 +14,13 @@ const Dashboard = ({ user }) => {
 
   useEffect(() => {
     fetchGDs();
+    
+    const socket = io(SOCKET_URL, { transports: ['websocket'], upgrade: false });
+    socket.on('gd-updated', () => {
+      fetchGDs();
+    });
+    
+    return () => socket.disconnect();
   }, []);
 
   const fetchGDs = async () => {
@@ -49,24 +60,17 @@ const Dashboard = ({ user }) => {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
-      <header style={{ background: 'white', padding: '1rem 2rem', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ color: '#333' }}>GD Platform Dashboard</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span>Welcome, {user.name}</span>
-          <button onClick={logout} style={{ padding: '0.5rem 1rem', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            Logout
-          </button>
-        </div>
-      </header>
+      <Navigation user={user} />
+
 
       <main style={{ padding: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h2>Active Group Discussions</h2>
           <button
             onClick={() => setShowCreateForm(true)}
-            style={{ padding: '0.75rem 1.5rem', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            style={{ padding: '0.75rem 1.5rem', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
           >
-            Start New GD
+            🚀 Start New GD
           </button>
         </div>
 

@@ -66,37 +66,45 @@ function buildFallbackResponse(questionCount, role) {
   };
 }
 
-function buildResultSummary(interview) {
-  const strongScores = interview.questions.filter((entry) => entry.score >= 8);
-  const weakScores = interview.questions.filter((entry) => entry.score <= 5);
+async function getAIInterviewSummary(interview) {
+  try {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: process.env.INTERVIEW_MODEL || 'gemini-1.5-flash' });
+    
+    let conversationHistory = '';
+    interview.questions.forEach((entry, index) => {
+      conversationHistory += `Q${index + 1}: ${entry.question}\nA${index + 1}: ${entry.userAnswer}\nScore: ${entry.score}/10\n\n`;
+    });
 
-  const strengths = strongScores.length
-    ? [
-        'You communicated clearly and kept your answers focused.',
-        'Your stronger answers showed confidence and relevant knowledge.'
-      ]
-    : [
-        'You stayed engaged throughout the interview.',
-        'You attempted every question and kept the conversation moving.'
-      ];
+    const prompt = `You are a Senior Technical Recruiter at a top-tier FAANG company. 
+You have just concluded an interview for a ${interview.difficulty} ${interview.role} position.
+Here is the complete interview transcript:
 
-  const weaknesses = weakScores.length
-    ? [
-        'Several answers needed more concrete examples or measurable outcomes.',
-        'Some responses stayed too general instead of proving the point.'
-      ]
-    : [
-        'Your answers can improve further with sharper examples.',
-        'A few responses would benefit from more structure and stronger closing points.'
-      ];
+${conversationHistory}
 
-  const improvements = [
-    'Use a situation-action-result structure when describing experience.',
-    'Add at least one concrete technical or business detail to each answer.',
-    'Practice speaking answers aloud so they sound natural and concise.'
-  ];
+Based on this transcript, generate a strict JSON object containing a comprehensive, industry-standard interview assessment.
+The JSON must have the following keys:
+- "strengths": Array of 3 specific, detailed technical or behavioral strengths demonstrated by the candidate based on their exact words.
+- "weaknesses": Array of 3 specific, detailed areas of improvement, missing knowledge, or structural flaws in their answers.
+- "improvements": Array of 3 highly actionable, professional tips for their next interview.
 
-  return { strengths, weaknesses, improvements };
+Return ONLY valid JSON without markdown formatting.`;
+
+    const result = await model.generateContent(prompt);
+    let rawResponse = result.response.text().trim();
+    if (rawResponse.startsWith('```json')) {
+        rawResponse = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+    }
+    return JSON.parse(rawResponse);
+  } catch (error) {
+    console.error("AI Summary generation failed", error);
+    return {
+      strengths: ["Completed the interview successfully", "Communicated ideas clearly"],
+      weaknesses: ["Could provide more technical depth", "Needs more concrete examples"],
+      improvements: ["Use the STAR method for behavioral questions", "Review advanced technical concepts"]
+    };
+  }
 }
 
 async function getAIResponse(conversationHistory, role, difficulty, questionCount, currentQuestion, userAnswer, jobDescription) {
@@ -107,21 +115,18 @@ async function getAIResponse(conversationHistory, role, difficulty, questionCoun
       model: process.env.INTERVIEW_MODEL || 'gemini-1.5-flash'
     });
 
-    const prompt = `You are a skilled human interviewer speaking naturally in real time.
-You are interviewing a candidate for a ${difficulty} ${role} role.
-${jobDescription ? `The specific job description or requirements are: ${jobDescription}\n` : ''}
+    const prompt = `You are an elite Senior Technical Interviewer at a top-tier tech company. You are interviewing a candidate for a ${difficulty} ${role} role in a live voice call.
+${jobDescription ? `The specific job requirements are: ${jobDescription}\n` : ''}
 This is question ${questionCount} out of 5.
 
-Interview style:
-- Sound calm, professional, and conversational.
-- Give short human feedback on the last answer.
-- Ask exactly one natural follow-up question at a time.
-- If a custom job description is provided, tailor your questions heavily toward those specific requirements.
-- Push for specifics if the answer is vague.
-- Keep feedback to 1-2 sentences.
-- Keep the next question to 1-2 sentences.
-- Score the answer from 0 to 10.
-- If this is the last question, set nextQuestion to "END".
+Interview Guidelines:
+- Sound professional, encouraging, yet rigorous.
+- Give extremely brief human-like feedback on the previous answer (e.g., "Good point on X, but...", or "That makes sense. Moving on...").
+- Ask exactly one highly targeted, industry-standard follow-up question. 
+- For 'Hard' difficulty, ask deep architectural, system design, or complex scenario-based questions.
+- If a custom job description is provided, heavily target those specific skills.
+- Score the answer strictly from 0 to 10 based on technical accuracy, problem-solving depth, and clarity.
+- If this is question 5, set nextQuestion to "END".
 
 Current question:
 ${currentQuestion}
@@ -233,10 +238,10 @@ router.post('/respond', auth, async (req, res) => {
       const scores = interview.questions.map((entry) => entry.score);
       interview.overallScore = Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
 
-      const summary = buildResultSummary(interview);
-      interview.strengths = summary.strengths;
-      interview.weaknesses = summary.weaknesses;
-      interview.improvements = summary.improvements;
+      const summary = await getAIInterviewSummary(interview);
+      interview.strengths = summary.strengths || ["Communicated clearly"];
+      interview.weaknesses = summary.weaknesses || ["Needs more examples"];
+      interview.improvements = summary.improvements || ["Practice technical depth"];
       interview.currentQuestion = null;
       interview.status = 'completed';
       await interview.save();
@@ -278,6 +283,30 @@ router.get('/results/:id', auth, async (req, res) => {
     res.json(interview);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch('/:id/end', auth, async (req, res) => {
+  try {
+    const interview = await Interview.findById(req.params.id);
+
+    if (!interview) {
+      return res.status(404).json({ error: 'Interview not found' });
+    }
+
+    if (interview.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'You cannot access this interview session' });
+    }
+
+    if (interview.status !== 'completed') {
+      interview.status = 'ended';
+      interview.currentQuestion = null;
+      await interview.save();
+    }
+
+    return res.json({ success: true, interview });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 

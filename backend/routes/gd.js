@@ -16,6 +16,21 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// Get GDs conducted by the logged-in user, including ended sessions
+router.get('/mine/conducted', auth, async (req, res) => {
+  try {
+    const gds = await GD.find({ moderator: req.user._id })
+      .populate('moderator', 'name')
+      .populate('participants', 'name')
+      .sort({ createdAt: -1 });
+
+    res.json(gds);
+  } catch (error) {
+    console.error('Get conducted GDs error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Create new GD
 router.post('/', auth, async (req, res) => {
   try {
@@ -27,12 +42,14 @@ router.post('/', auth, async (req, res) => {
       description,
       moderator: req.user._id,
       roomId,
+      participants: [req.user._id],
       maxParticipants: maxParticipants || 10
     });
     
     await gd.save();
     await gd.populate('moderator', 'name');
     
+    req.app.get('io').emit('gd-updated');
     res.status(201).json(gd);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -60,6 +77,7 @@ router.post('/:id/join', auth, async (req, res) => {
 
     await gd.populate('moderator', 'name');
     await gd.populate('participants', 'name');
+    req.app.get('io').emit('gd-updated');
     res.json(gd);
   } catch (error) {
     console.error('Join GD error:', error);
@@ -83,6 +101,7 @@ router.post('/:id/leave', auth, async (req, res) => {
     }
     
     await gd.save();
+    req.app.get('io').emit('gd-updated');
     res.json({ message: 'Left GD successfully', participantCount: gd.participants.length });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -104,6 +123,8 @@ router.patch('/:id/end', auth, async (req, res) => {
     gd.isActive = false;
     await gd.save();
     
+    req.app.get('io').to(gd.roomId).emit('session-closed');
+    req.app.get('io').emit('gd-updated');
     res.json({ message: 'GD ended successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
