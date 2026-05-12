@@ -40,6 +40,7 @@ const MainDashboard = ({ user }) => {
   const [joinError, setJoinError] = useState('');
   const [copied, setCopied] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showConducted, setShowConducted] = useState(false);
   const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
@@ -146,25 +147,43 @@ const MainDashboard = ({ user }) => {
         </div>
 
         {/* Conducted Discussions */}
-        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ background: 'white', borderRadius: '16px', padding: showConducted ? '1.5rem' : '1.1rem 1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.75rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showConducted ? '1.25rem' : 0, flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#374151', fontWeight: '700' }}>
+              <button
+                type="button"
+                onClick={() => setShowConducted((open) => !open)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', margin: 0, padding: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#374151', fontSize: '1.1rem', fontWeight: '700', fontFamily: 'inherit' }}
+              >
+                <span style={{ display: 'inline-flex', width: '28px', height: '28px', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', background: '#eef2ff', color: '#4f46e5', transform: showConducted ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                  ▶
+                </span>
                 Conducted by You
-              </h2>
+                <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '0.18rem 0.55rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '800' }}>
+                  {conductedGDs.length}
+                </span>
+              </button>
               <p style={{ margin: '0.25rem 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>
-                Your self-created GD sessions, including ended discussions.
+                {showConducted ? 'Your self-created GD sessions, including ended discussions.' : 'Click to view your self-created GD sessions.'}
               </p>
             </div>
-            <button
-              onClick={() => navigate('/my-gds')}
-              style={{ padding: '0.65rem 1rem', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
-            >
-              View All
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <button
+                onClick={() => setShowConducted((open) => !open)}
+                style={{ padding: '0.65rem 1rem', background: '#eef2ff', color: '#4f46e5', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
+              >
+                {showConducted ? 'Hide' : 'Show'}
+              </button>
+              <button
+                onClick={() => navigate('/my-gds')}
+                style={{ padding: '0.65rem 1rem', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
+              >
+                View All
+              </button>
+            </div>
           </div>
 
-          {loading ? (
+          {showConducted && (loading ? (
             <div style={{ color: '#9ca3af', padding: '1.5rem 0' }}>Loading your conducted GDs...</div>
           ) : conductedGDs.length === 0 ? (
             <div style={{ border: '1px dashed #d1d5db', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', color: '#6b7280' }}>
@@ -203,7 +222,7 @@ const MainDashboard = ({ user }) => {
                 </div>
               ))}
             </div>
-          )}
+          ))}
         </div>
 
         {/* Live Discussions */}

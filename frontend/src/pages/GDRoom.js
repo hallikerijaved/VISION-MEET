@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
@@ -65,8 +65,31 @@ export default function GDRoom({ user }) {
   const silenceRef      = useRef(null);
   const messagesEndRef  = useRef(null);
   const isChatOpenRef   = useRef(false);
+  const speechTranscriptRef = useRef('');
 
   const { transcript: speechTranscript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
+
+  useEffect(() => {
+    speechTranscriptRef.current = speechTranscript;
+  }, [speechTranscript]);
+
+  const addContribution = useCallback((text) => {
+    const cleaned = text.trim();
+    if (!cleaned) return;
+    const current = contributionsRef.current;
+    if (current[current.length - 1] === cleaned) return;
+    const newContribs = [...current, cleaned];
+    setContributions(newContribs);
+    contributionsRef.current = newContribs;
+  }, []);
+
+  const flushSpeechContribution = useCallback(() => {
+    const pendingSpeech = speechTranscriptRef.current.trim();
+    if (!pendingSpeech) return;
+    addContribution(pendingSpeech);
+    speechTranscriptRef.current = '';
+    resetTranscript();
+  }, [addContribution, resetTranscript]);
 
   /* scroll chat to bottom */
   useEffect(() => {
@@ -186,6 +209,8 @@ export default function GDRoom({ user }) {
 
     socket.on('session-closed', async () => {
       alert('The moderator has ended the session.');
+      SpeechRecognition.stopListening();
+      flushSpeechContribution();
       if (contributionsRef.current.length > 0) {
         try {
           setEvaluating(true);
@@ -249,17 +274,13 @@ export default function GDRoom({ user }) {
     if (!newMessage.trim()) return;
     const msg = { roomId, message: newMessage, sender: user.name, timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
     socketRef.current.emit('send-message', msg);
-    // Removed appending to contributionsRef because we only evaluate speech now.
+    addContribution(newMessage);
     setNewMessage('');
   };
 
   const sendVoiceMsg = text => {
     if (!text.trim()) return;
-    // We intentionally DO NOT emit this as a chat message.
-    // It is quietly added to contributions for evaluation.
-    const newContribs = [...contributionsRef.current, text];
-    setContributions(newContribs);
-    contributionsRef.current = newContribs;
+    addContribution(text);
   };
 
   const toggleChat = () => {
@@ -340,10 +361,7 @@ export default function GDRoom({ user }) {
     SpeechRecognition.stopListening();
     setIsVoiceMode(false);
     setIsListening(false);
-    if (speechTranscript.trim()) {
-      sendVoiceMsg(speechTranscript.trim());
-    }
-    resetTranscript();
+    flushSpeechContribution();
   };
 
   useEffect(() => {
@@ -352,6 +370,7 @@ export default function GDRoom({ user }) {
       silenceRef.current = setTimeout(() => {
         if (speechTranscript.trim()) {
           sendVoiceMsg(speechTranscript.trim());
+          speechTranscriptRef.current = '';
           resetTranscript();
         }
       }, 2000);
@@ -361,6 +380,7 @@ export default function GDRoom({ user }) {
 
   /* ── evaluation ── */
   const generateEvaluation = async () => {
+    flushSpeechContribution();
     if (!contributionsRef.current.length) return false;
     setEvaluating(true);
     let success = false;

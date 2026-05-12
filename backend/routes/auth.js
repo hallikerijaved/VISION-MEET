@@ -243,7 +243,7 @@ router.post('/forgot-password', async (req, res) => {
             <p style="margin: 0; font-size: 14px; line-height: 1.75; color: #4b5563;">Sincerely,<br>The Vision Meet Security Team</p>
           </div>
           <div style="background: #f8fafc; padding: 18px 28px 24px; font-size: 13px; color: #6b7280;">
-            <p style="margin: 0;">If you need additional support, contact our team at support@visionmeet.com.</p>
+            <p style="margin: 0;">If you need additional support, contact our team at support.visionmeet@gmail.com.</p>
           </div>
         </div>
       </div>
