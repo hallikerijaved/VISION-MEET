@@ -52,12 +52,6 @@ const Dashboard = ({ user }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.reload();
-  };
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
       <Navigation user={user} />
