@@ -17,6 +17,7 @@ import Evaluations from './pages/Evaluations';
 import Profile from './pages/Profile';
 import ResumeBuilder from './pages/ResumeBuilder';
 import ResultsDashboard from './pages/ResultsDashboard';
+import LandingPage from './pages/LandingPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -53,7 +54,7 @@ function App() {
         <Route path="/admin" element={user?.email === 'admin@gd.com' ? <AdminPanel user={user} /> : <Navigate to="/login" />} />
         <Route path="/room/:roomId" element={user ? <GDRoom user={user} /> : <Navigate to="/login" />} />
         <Route path="/join/:roomId" element={user ? <JoinGD user={user} /> : <Navigate to="/login" />} />
-        <Route path="/" element={<Navigate to={user ? (user.email === 'admin@gd.com' ? "/admin" : "/dashboard") : "/login"} />} />
+        <Route path="/" element={<LandingPage user={user} />} />
       </Routes>
     </Router>
   );

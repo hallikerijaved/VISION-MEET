@@ -12,7 +12,7 @@ const StatCard = ({ icon, value, label, color }) => (
     <div style={{ fontSize: '2.2rem', background: `${color}18`, borderRadius: '12px', padding: '0.6rem', lineHeight: 1 }}>{icon}</div>
     <div>
       <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#1a1a2e', lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem' }}>{label}</div>
+      <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem', whiteSpace: 'nowrap' }}>{label}</div>
     </div>
   </div>
 );
@@ -101,7 +101,7 @@ const MainDashboard = ({ user }) => {
   const formatDate = (date) => new Date(date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f2f8', fontFamily: "'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#f0f2f8', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
       <Navigation user={user} />
 
       {/* Hero */}
@@ -136,7 +136,6 @@ const MainDashboard = ({ user }) => {
 
         {/* Quick Actions */}
         <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.75rem' }}>
-          <h2 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', color: '#374151', fontWeight: '700' }}>Quick Actions</h2>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <ActionBtn icon="🚀" label="Start New GD" onClick={() => navigate('/create-gd')} color="#4f46e5" />
             <ActionBtn icon="🤖" label="AI Mock Interview" onClick={() => navigate('/interview')} color="#e11d48" />
