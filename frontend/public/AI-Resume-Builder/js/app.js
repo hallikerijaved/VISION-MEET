@@ -147,13 +147,13 @@ function autoSave() {
   _saveTimer = setTimeout(() => {
     const state = getFullState();
     state.isDark = window.isDark;
-    localStorage.setItem('resumeBuilder_current', JSON.stringify(state));
+    localStorage.setItem(getStorageKey('resumeBuilder_current'), JSON.stringify(state));
     updateResumeList();
   }, 400);
 }
 
 function loadSaved() {
-  const raw = localStorage.getItem('resumeBuilder_current');
+  const raw = localStorage.getItem(getStorageKey('resumeBuilder_current'));
   if (!raw) return;
   try {
     const s = JSON.parse(raw);
@@ -163,8 +163,23 @@ function loadSaved() {
 }
 
 // ===================== MULTIPLE RESUMES =====================
+function getUserId() {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return user.id || user._id || 'guest';
+    }
+  } catch (e) {}
+  return 'guest';
+}
+
+function getStorageKey(baseKey) {
+  return baseKey + '_' + getUserId();
+}
+
 function getSavedResumes() {
-  try { return JSON.parse(localStorage.getItem('resumeBuilder_list') || '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(getStorageKey('resumeBuilder_list')) || '[]'); } catch { return []; }
 }
 
 function saveResumeAs() {
@@ -174,7 +189,7 @@ function saveResumeAs() {
   const list = getSavedResumes();
   list.unshift({ id: Date.now(), name, data: getFullState(), savedAt: new Date().toLocaleDateString() });
   if (list.length > 10) list.pop();
-  localStorage.setItem('resumeBuilder_list', JSON.stringify(list));
+  localStorage.setItem(getStorageKey('resumeBuilder_list'), JSON.stringify(list));
   updateResumeList();
   showToast('✓ Saved: ' + name);
 }
@@ -190,7 +205,7 @@ function loadResume(id) {
 function deleteResume(id, e) {
   e.stopPropagation();
   const list = getSavedResumes().filter(r => r.id !== id);
-  localStorage.setItem('resumeBuilder_list', JSON.stringify(list));
+  localStorage.setItem(getStorageKey('resumeBuilder_list'), JSON.stringify(list));
   updateResumeList();
 }
 

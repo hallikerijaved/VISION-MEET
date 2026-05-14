@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../utils/api';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = ({ setUser }) => {
   const navigate = useNavigate();
@@ -76,6 +77,21 @@ const Login = ({ setUser }) => {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await auth.googleLogin(credentialResponse.credential);
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      setUser(response.data.user);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Google login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleForgot = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -106,6 +122,11 @@ const Login = ({ setUser }) => {
     opacity: loading ? 0.7 : 1
   };
 
+  const dividerStyle = {
+    display: 'flex', alignItems: 'center', textAlign: 'center', margin: '1.5rem 0', color: '#888'
+  };
+  const lineStyle = { flex: 1, borderBottom: '1px solid #ddd' };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
       <div style={{ background: 'white', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', width: '420px' }}>
@@ -134,30 +155,48 @@ const Login = ({ setUser }) => {
 
         {/* LOGIN */}
         {mode === 'login' && (
-          <form onSubmit={handleLogin}>
-            <input type="email" placeholder="Email address" value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              style={inputStyle} required />
-            <input type="password" placeholder="Password" value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              style={inputStyle} required />
-            <button type="submit" style={btnStyle} disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-              <button type="button" onClick={() => reset('forgot')}
-                style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', fontSize: '0.9rem' }}>
-                Forgot Password?
+          <>
+            <form onSubmit={handleLogin}>
+              <input type="email" placeholder="Email address" value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                style={inputStyle} required />
+              <input type="password" placeholder="Password" value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                style={inputStyle} required />
+              <button type="submit" style={btnStyle} disabled={loading}>
+                {loading ? 'Logging in...' : 'Login'}
               </button>
+              
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                <button type="button" onClick={() => reset('forgot')}
+                  style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', fontSize: '0.9rem' }}>
+                  Forgot Password?
+                </button>
+              </div>
+            </form>
+            
+            <div style={dividerStyle}>
+              <div style={lineStyle}></div>
+              <span style={{ padding: '0 10px', fontSize: '0.9rem' }}>or continue with</span>
+              <div style={lineStyle}></div>
             </div>
-            <div style={{ textAlign: 'center', marginTop: '0.5rem', color: '#666', fontSize: '0.9rem' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google login failed')}
+                useOneTap
+              />
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '1.5rem', color: '#666', fontSize: '0.9rem' }}>
               Don't have an account?{' '}
               <button type="button" onClick={() => reset('register')}
                 style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontWeight: 'bold' }}>
                 Register
               </button>
             </div>
-          </form>
+          </>
         )}
 
         {/* REGISTER - Step 1: Fill details */}
@@ -175,7 +214,22 @@ const Login = ({ setUser }) => {
             <button onClick={handleSendOTP} style={btnStyle} disabled={loading}>
               {loading ? 'Sending OTP...' : '📧 Send OTP to Email'}
             </button>
-            <div style={{ textAlign: 'center', marginTop: '1rem', color: '#666', fontSize: '0.9rem' }}>
+            
+            <div style={dividerStyle}>
+              <div style={lineStyle}></div>
+              <span style={{ padding: '0 10px', fontSize: '0.9rem' }}>or continue with</span>
+              <div style={lineStyle}></div>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google sign up failed')}
+                text="signup_with"
+              />
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '1.5rem', color: '#666', fontSize: '0.9rem' }}>
               Already have an account?{' '}
               <button type="button" onClick={() => reset('login')}
                 style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', fontWeight: 'bold' }}>

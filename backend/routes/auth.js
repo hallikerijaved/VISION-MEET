@@ -5,7 +5,47 @@ const User = require('../models/User');
 const OTP = require('../models/OTP');
 const nodemailer = require('nodemailer');
 const { sendEmail } = require('../utils/sendEmail');
+const { OAuth2Client } = require('google-auth-library');
 const router = express.Router();
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID");
+
+// Google Login / Registration
+router.post('/google-login', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID",
+    });
+    
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+    
+    let user = await User.findOne({ email });
+    
+    if (!user) {
+      if (email === 'admin@gd.com') {
+        return res.status(403).json({ message: 'Admin registration is not allowed through this system' });
+      }
+      
+      // Create new user for google sign up
+      user = new User({
+        name,
+        email,
+        password: crypto.randomBytes(16).toString('hex'), // Random password for google users
+        profilePicture: picture
+      });
+      await user.save();
+    }
+    
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture || picture || '' } });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(400).json({ message: 'Google login failed' });
+  }
+});
 
 // Test Gmail connection
 router.get('/test-gmail', async (req, res) => {
