@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../utils/api';
-import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const Login = ({ setUser }) => {
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ const Login = ({ setUser }) => {
       // Clear code from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGithubCallback = async (code) => {
@@ -105,21 +106,6 @@ const Login = ({ setUser }) => {
       } else {
         setError(err.response?.data?.message || 'Invalid credentials');
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await auth.googleLogin(credentialResponse.credential);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      setUser(response.data.user);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Google login failed');
     } finally {
       setLoading(false);
     }
