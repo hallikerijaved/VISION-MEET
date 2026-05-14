@@ -6,6 +6,7 @@ const OTP = require('../models/OTP');
 const nodemailer = require('nodemailer');
 const { sendEmail } = require('../utils/sendEmail');
 const { OAuth2Client } = require('google-auth-library');
+const axios = require('axios');
 const router = express.Router();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID");
@@ -13,14 +14,29 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLI
 // Google Login / Registration
 router.post('/google-login', async (req, res) => {
   try {
-    const { credential } = req.body;
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID",
-    });
+    const { credential, access_token } = req.body;
     
-    const payload = ticket.getPayload();
-    const { email, name, picture } = payload;
+    let email, name, picture;
+
+    if (credential) {
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID",
+      });
+      const payload = ticket.getPayload();
+      email = payload.email;
+      name = payload.name;
+      picture = payload.picture;
+    } else if (access_token) {
+      const { data } = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+      email = data.email;
+      name = data.name;
+      picture = data.picture;
+    } else {
+      return res.status(400).json({ message: 'No Google credential or token provided' });
+    }
     
     let user = await User.findOne({ email });
     
@@ -44,6 +60,80 @@ router.post('/google-login', async (req, res) => {
   } catch (error) {
     console.error('Google login error:', error);
     res.status(400).json({ message: 'Google login failed' });
+  }
+});
+
+// GitHub Login / Registration
+router.post('/github-login', async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ message: 'Authorization code is required' });
+    }
+
+    // 1. Exchange code for access token
+    const tokenResponse = await axios.post(
+      'https://github.com/login/oauth/access_token',
+      {
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code,
+      },
+      {
+        headers: { Accept: 'application/json' },
+      }
+    );
+
+    const accessToken = tokenResponse.data.access_token;
+    if (!accessToken) {
+      return res.status(400).json({ message: 'Failed to retrieve access token from GitHub' });
+    }
+
+    // 2. Fetch user profile from GitHub
+    const userResponse = await axios.get('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    // 3. Fetch user emails from GitHub (primary email might not be public)
+    const emailResponse = await axios.get('https://api.github.com/user/emails', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    const githubUser = userResponse.data;
+    const emails = emailResponse.data;
+    
+    const primaryEmailObj = emails.find(e => e.primary) || emails[0];
+    const email = primaryEmailObj ? primaryEmailObj.email : null;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Could not fetch email from GitHub' });
+    }
+
+    const name = githubUser.name || githubUser.login;
+    const picture = githubUser.avatar_url;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      if (email === 'admin@gd.com') {
+        return res.status(403).json({ message: 'Admin registration is not allowed through this system' });
+      }
+      
+      // Create new user for GitHub sign up
+      user = new User({
+        name,
+        email,
+        password: crypto.randomBytes(16).toString('hex'), // Random password for GitHub users
+        profilePicture: picture
+      });
+      await user.save();
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture || picture || '' } });
+  } catch (error) {
+    console.error('GitHub login error:', error.response?.data || error.message);
+    res.status(400).json({ message: 'GitHub login failed' });
   }
 });
 
