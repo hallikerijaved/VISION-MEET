@@ -8,7 +8,7 @@
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm start",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && CI=false npm run build",
+    "build": "(cd frontend && npm install && npm run build) || (npm install && npm run build)",
     "start": "cd backend && npm start",
     "start:prod": "concurrently \"cd backend && npm start\" \"cd frontend && serve -s build\"",
     "test": "cd frontend && npm test",
