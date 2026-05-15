@@ -3,9 +3,9 @@
   "outputDirectory": "frontend/build",
   "installCommand": "echo skip",
   "framework": null,
-  "fallback": [
+  "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api|AI-Resume-Builder|static|.*\\..*).*)",
       "destination": "/index.html"
     }
   ],
