@@ -54,9 +54,31 @@ const Login = ({ setUser }) => {
     setFormData({ name: '', email: '', password: '', otp: '' });
   };
 
+  const validatePassword = (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) return "Password must be at least 8 characters long";
+    if (!hasUpperCase) return "Password must contain at least one uppercase letter";
+    if (!hasLowerCase) return "Password must contain at least one lowercase letter";
+    if (!hasNumber) return "Password must contain at least one number";
+    if (!hasSpecialChar) return "Password must contain at least one special symbol (@, #, $, etc.)";
+    
+    return null;
+  };
+
   const handleSendOTP = async () => {
     if (!formData.name || !formData.email || !formData.password) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    const passError = validatePassword(formData.password);
+    if (passError) {
+      setError(passError);
       return;
     }
     setLoading(true);
@@ -283,6 +305,35 @@ const Login = ({ setUser }) => {
             <input type="password" placeholder="Password" value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               style={inputStyle} />
+            
+            {/* Password Requirements Checklist */}
+            {mode === 'register' && formData.password && (
+              <div style={{ marginBottom: '1.5rem', padding: '0.8rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password Strength</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                  {[
+                    { label: '8+ Characters', met: formData.password.length >= 8 },
+                    { label: 'Uppercase', met: /[A-Z]/.test(formData.password) },
+                    { label: 'Lowercase', met: /[a-z]/.test(formData.password) },
+                    { label: 'Number', met: /[0-9]/.test(formData.password) },
+                    { label: 'Special Symbol', met: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password) }
+                  ].map((req, i) => (
+                    <div key={i} style={{ 
+                      fontSize: '0.75rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '4px',
+                      color: req.met ? '#10b981' : '#94a3b8',
+                      fontWeight: req.met ? '600' : '400',
+                      transition: 'all 0.2s'
+                    }}>
+                      {req.met ? '✓' : '○'} {req.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button onClick={handleSendOTP} style={btnStyle} disabled={loading}>
               {loading ? 'Sending OTP...' : '📧 Send OTP to Email'}
             </button>

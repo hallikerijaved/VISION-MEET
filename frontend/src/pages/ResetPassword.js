@@ -19,6 +19,22 @@ const ResetPassword = () => {
     }
   }, [email, otp, navigate]);
 
+  const validatePassword = (pass) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(pass);
+    const hasLowerCase = /[a-z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+
+    if (pass.length < minLength) return "Password must be at least 8 characters long";
+    if (!hasUpperCase) return "Password must contain at least one uppercase letter";
+    if (!hasLowerCase) return "Password must contain at least one lowercase letter";
+    if (!hasNumber) return "Password must contain at least one number";
+    if (!hasSpecialChar) return "Password must contain at least one special symbol (@, #, $, etc.)";
+    
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -28,8 +44,9 @@ const ResetPassword = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    const passError = validatePassword(password);
+    if (passError) {
+      setError(passError);
       return;
     }
 
@@ -63,6 +80,34 @@ const ResetPassword = () => {
             style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', border: '1px solid #ddd', borderRadius: '4px' }}
             required
           />
+
+          {/* Password Requirements Checklist */}
+          {password && (
+            <div style={{ marginBottom: '1.5rem', padding: '0.8rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Password Strength</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                {[
+                  { label: '8+ Characters', met: password.length >= 8 },
+                  { label: 'Uppercase', met: /[A-Z]/.test(password) },
+                  { label: 'Lowercase', met: /[a-z]/.test(password) },
+                  { label: 'Number', met: /[0-9]/.test(password) },
+                  { label: 'Special Symbol', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) }
+                ].map((req, i) => (
+                  <div key={i} style={{ 
+                    fontSize: '0.75rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    color: req.met ? '#10b981' : '#94a3b8',
+                    fontWeight: req.met ? '600' : '400',
+                    transition: 'all 0.2s'
+                  }}>
+                    {req.met ? '✓' : '○'} {req.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           <input
             type="password"
