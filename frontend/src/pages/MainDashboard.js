@@ -334,7 +334,7 @@ const MainDashboard = ({ user }) => {
             <div>
               <h4 style={{ color: 'white', margin: '0 0 1rem', fontSize: '1rem', fontWeight: '600' }}>Quick Links</h4>
               {[['🚀 Start GD', '/create-gd'], ['🔍 Browse GDs', '/browse-gds'], ['📋 My GDs', '/my-gds'], ['🤖 AI Interview', '/interview']].map(([label, path]) => (
-                <div key={path} onClick={() => navigate(path)} style={{ cursor: 'pointer', fontSize: '0.9rem', marginBottom: '0.6rem', transition: 'color 0.2s', display: 'inline-block' }}
+                <div key={path} onClick={() => navigate(path)} style={{ cursor: 'pointer', fontSize: '0.9rem', marginBottom: '0.8rem', transition: 'color 0.2s', display: 'block' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#a78bfa'}
                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}>
                   {label}
