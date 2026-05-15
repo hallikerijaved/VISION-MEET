@@ -1,7 +1,7 @@
 {
-  "rewrites": [
+  "fallback": [
     {
-      "source": "/((?!api|AI-Resume-Builder|static|.*\\..*).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
