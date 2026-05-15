@@ -72,6 +72,7 @@
   font-size: 14px;
   color: var(--admin-text-sub);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .btn-logout {

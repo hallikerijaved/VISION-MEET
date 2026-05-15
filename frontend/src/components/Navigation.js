@@ -172,7 +172,7 @@ const Navigation = ({ user }) => {
                   </div>
                 )}
               </div>
-              <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: '600' }}>{user?.name}</span>
+              <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: '600', whiteSpace: 'nowrap' }}>{user?.name}</span>
             </div>
             <button onClick={logout} style={{
               padding: '0.5rem 1.2rem', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5',
