@@ -123,6 +123,10 @@
   display: block;
 }
 
+.local-mirror {
+  transform: scaleX(-1);
+}
+
 .video-label {
   position: absolute;
   bottom: 12px;

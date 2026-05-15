@@ -166,12 +166,12 @@ const Login = ({ setUser }) => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-      <div style={{ background: 'white', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', width: '420px' }}>
+      <div style={{ background: 'white', padding: '2.5rem', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', width: '100%', maxWidth: '420px', boxSizing: 'border-box' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎓</div>
-          <h2 style={{ margin: 0, color: '#333' }}>VISION MEET</h2>
+          <h2 style={{ margin: 0, color: '#333', fontWeight: '800' }}>VISION MEET</h2>
           <p style={{ color: '#666', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>
             {mode === 'login' && 'Welcome back!'}
             {mode === 'register' && (step === 1 ? 'Create your account' : 'Verify your email')}
@@ -218,7 +218,7 @@ const Login = ({ setUser }) => {
               <div style={lineStyle}></div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button 
                 type="button" 
                 onClick={() => loginWithGoogleCustom()}
@@ -293,7 +293,7 @@ const Login = ({ setUser }) => {
               <div style={lineStyle}></div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button 
                 type="button" 
                 onClick={() => loginWithGoogleCustom()}

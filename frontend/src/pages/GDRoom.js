@@ -572,7 +572,7 @@ export default function GDRoom({ user }) {
           <div className={`video-grid cols-${cols}`}>
             {/* local */}
             <div className="video-tile">
-              <video ref={localVideoRef} autoPlay muted playsInline className="video-element" />
+              <video ref={localVideoRef} autoPlay muted playsInline className="video-element local-mirror" />
               <span className="video-label">{user.name} (You)</span>
             </div>
 

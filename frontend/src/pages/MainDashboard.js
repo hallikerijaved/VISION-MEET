@@ -22,8 +22,9 @@ const ActionBtn = ({ icon, label, onClick, color }) => (
     display: 'flex', alignItems: 'center', gap: '0.6rem',
     padding: '0.85rem 1.4rem', background: color, color: 'white',
     border: 'none', borderRadius: '10px', cursor: 'pointer',
-    fontSize: '0.95rem', fontWeight: '600',
-    boxShadow: `0 4px 12px ${color}55`, transition: 'transform 0.15s, box-shadow 0.15s'
+    fontSize: '0.95rem', fontWeight: '600', flex: 1, minWidth: 'fit-content', justifyContent: 'center',
+    boxShadow: `0 4px 12px ${color}55`, transition: 'transform 0.15s, box-shadow 0.15s',
+    whiteSpace: 'nowrap'
   }}
     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 6px 16px ${color}77`; }}
     onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 12px ${color}55`; }}
@@ -68,7 +69,7 @@ const MainDashboard = ({ user }) => {
     fetchData();
     const interval = setInterval(fetchData, 10000);
     const keepAlive = setInterval(() => {
-      fetch(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5001'}/health`).catch(() => {});
+      fetch(`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5001'}/health`).catch(() => { });
     }, 4 * 60 * 1000);
     return () => { clearInterval(interval); clearInterval(keepAlive); };
   }, [fetchData]);
@@ -113,7 +114,7 @@ const MainDashboard = ({ user }) => {
         <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '160px', height: '160px', background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
         <div style={{ position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: '900', letterSpacing: '-0.03em' }}>Vision<span style={{ color: '#a78bfa' }}>Meet</span></span>
+            <span style={{ fontSize: 'clamp(2.5rem, 8vw, 4rem)', fontWeight: '900', letterSpacing: '-0.06em', fontFamily: "'Inter', sans-serif", color: 'white', textShadow: '0 0 30px rgba(167, 139, 250, 0.4)' }}>Vision<span style={{ color: '#a78bfa' }}>Meet</span></span>
           </div>
           <h1 style={{ margin: 0, fontSize: 'clamp(1.2rem, 3vw, 1.6rem)', fontWeight: '600', opacity: 0.9 }}>
             Welcome back, {user.name} 👋
@@ -127,7 +128,7 @@ const MainDashboard = ({ user }) => {
       <div style={{ maxWidth: '1100px', margin: '-2.5rem auto 0', padding: '0 1.5rem 3rem', position: 'relative' }}>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
           <StatCard icon="🎯" value={stats.activeGDs} label="Active Discussions" color="#4f46e5" />
           <StatCard icon="👥" value={stats.totalParticipants} label="Live Participants" color="#059669" />
           <StatCard icon="📋" value={stats.myGDs} label="My Discussions" color="#d97706" />
@@ -196,7 +197,7 @@ const MainDashboard = ({ user }) => {
               </button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.85rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '0.85rem' }}>
               {conductedGDs.map((g) => (
                 <div key={g._id} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1rem', background: g.isActive ? '#f8fafc' : '#ffffff' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '0.65rem' }}>
@@ -269,7 +270,7 @@ const MainDashboard = ({ user }) => {
                     onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1, minWidth: '200px' }}>
+                      <div style={{ flex: 1, minWidth: 'min(100%, 200px)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
                           <h3 style={{ margin: 0, fontSize: '1rem', color: '#1f2937', fontWeight: '700' }}>{g.title}</h3>
                           <span style={{ background: full ? '#fee2e2' : '#dcfce7', color: full ? '#dc2626' : '#16a34a', padding: '0.15rem 0.5rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: '700' }}>
@@ -321,50 +322,50 @@ const MainDashboard = ({ user }) => {
       </div>
 
       {/* Footer */}
-      <footer style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', color: 'rgba(255,255,255,0.7)', padding: '2.5rem 2rem 1.5rem', marginTop: '2rem' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+      <footer className="stitch-dashboard-footer" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', color: 'rgba(255,255,255,0.7)', padding: '4rem 2rem 1.5rem', marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div className="stitch-footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '3rem', marginBottom: '3rem' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-                <span style={{ color: 'white', fontWeight: '800', fontSize: '1.1rem' }}>Vision<span style={{ color: '#a78bfa' }}>Meet</span></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+                <span style={{ color: 'white', fontWeight: '900', fontSize: '1.4rem', letterSpacing: '-0.04em', fontFamily: "'Manrope', sans-serif" }}>Vision<span style={{ color: '#a78bfa' }}>Meet</span></span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.6 }}>Real-time group discussions with video conferencing, AI interviews, and smart evaluations.</p>
+              <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.7 }}>Real-time group discussions with video conferencing, AI interviews, and smart evaluations tailored for professionals.</p>
             </div>
             <div>
-              <h4 style={{ color: 'white', margin: '0 0 0.75rem', fontSize: '0.95rem' }}>Quick Links</h4>
+              <h4 style={{ color: 'white', margin: '0 0 1rem', fontSize: '1rem', fontWeight: '600' }}>Quick Links</h4>
               {[['🚀 Start GD', '/create-gd'], ['🔍 Browse GDs', '/browse-gds'], ['📋 My GDs', '/my-gds'], ['🤖 AI Interview', '/interview']].map(([label, path]) => (
-                <div key={path} onClick={() => navigate(path)} style={{ cursor: 'pointer', fontSize: '0.85rem', marginBottom: '0.4rem', transition: 'color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'white'}
+                <div key={path} onClick={() => navigate(path)} style={{ cursor: 'pointer', fontSize: '0.9rem', marginBottom: '0.6rem', transition: 'color 0.2s', display: 'inline-block' }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#a78bfa'}
                   onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}>
                   {label}
                 </div>
               ))}
             </div>
             <div>
-              <h4 style={{ color: 'white', margin: '0 0 0.75rem', fontSize: '0.95rem' }}>Features</h4>
-              {['🎥 Video Conferencing', '💬 Real-time Chat', '🤖 AI Evaluation'].map(f => (
-                <div key={f} style={{ fontSize: '0.85rem', marginBottom: '0.4rem' }}>{f}</div>
+              <h4 style={{ color: 'white', margin: '0 0 1rem', fontSize: '1rem', fontWeight: '600' }}>Features</h4>
+              {['🎥 HD Video Conferencing', '💬 Real-time Chat', '🤖 AI Evaluation', '📊 Analytics Dashboard'].map(f => (
+                <div key={f} style={{ fontSize: '0.9rem', marginBottom: '0.6rem' }}>{f}</div>
               ))}
             </div>
             <div>
-              <h4 style={{ color: 'white', margin: '0 0 0.75rem', fontSize: '0.95rem' }}>Status</h4>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} />
+              <h4 style={{ color: 'white', margin: '0 0 1rem', fontSize: '1rem', fontWeight: '600' }}>Status</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', marginBottom: '0.6rem' }}>
+                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)' }} />
                 Backend Online
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', marginBottom: '0.6rem' }}>
+                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)' }} />
                 MongoDB Connected
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem' }}>
+                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)' }} />
                 WebRTC Ready
               </div>
             </div>
           </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem' }}>© {new Date().getFullYear()} VisionMeet. All rights reserved.</span>
-            <span style={{ fontSize: '0.8rem' }}>Built with ⚡ React · Node.js · WebRTC · MongoDB</span>
+          <div className="stitch-footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.85rem' }}>© {new Date().getFullYear()} <strong style={{ color: 'white', fontWeight: '700' }}>VisionMeet</strong>. All rights reserved.</span>
+            <span style={{ fontSize: '0.85rem' }}>Built with ⚡ React · Node.js · WebRTC</span>
           </div>
         </div>
       </footer>
