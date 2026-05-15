@@ -6,6 +6,7 @@ const AdminPanel = ({ user }) => {
   const [gds, setGds] = useState([]);
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('gds');
+  const [userSearchTerm, setUserSearchTerm] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -56,22 +57,27 @@ const AdminPanel = ({ user }) => {
 
   const activeGDsCount = gds.filter(gd => gd.isActive).length;
 
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || 
+    u.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+  );
+
   return (
     <div className="admin-dashboard">
       <header className="admin-header">
         <div className="admin-logo">
-          <h1>Admin Control</h1>
-          <span className="admin-logo-badge">Live System</span>
+          <h1>VisionMeet Admin</h1>
+          <span className="admin-logo-badge">Live Console</span>
         </div>
         <div className="admin-user-menu">
-          <span className="admin-greeting">Welcome, <strong>{user.name}</strong></span>
+          <span className="admin-greeting">Admin: <strong>{user.name}</strong></span>
           <button onClick={logout} className="btn-logout">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
               <polyline points="16 17 21 12 16 7"></polyline>
               <line x1="21" y1="12" x2="9" y2="12"></line>
             </svg>
-            Logout
+            Sign Out
           </button>
         </div>
       </header>
@@ -81,23 +87,29 @@ const AdminPanel = ({ user }) => {
         {/* Dashboard Metrics */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon primary">👥</div>
+            <div className="stat-icon primary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3525cd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
             <div className="stat-details">
               <span className="stat-title">Total Users</span>
               <span className="stat-value">{users.length}</span>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon success">🟢</div>
+            <div className="stat-icon success">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.6 11.6L22 7L15.6 2.4"></path><path d="M2 17l6-4.6L2 7.8"></path><path d="M12 22v-5l6-4.6"></path><path d="M12 2v5l-6 4.6"></path></svg>
+            </div>
             <div className="stat-details">
               <span className="stat-title">Active Sessions</span>
               <span className="stat-value">{activeGDsCount}</span>
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon warning">📊</div>
+            <div className="stat-icon warning">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </div>
             <div className="stat-details">
-              <span className="stat-title">Total Discussions</span>
+              <span className="stat-title">Total GDs</span>
               <span className="stat-value">{gds.length}</span>
             </div>
           </div>
@@ -109,14 +121,16 @@ const AdminPanel = ({ user }) => {
             onClick={() => setActiveTab('gds')}
             className={`admin-tab ${activeTab === 'gds' ? 'active' : ''}`}
           >
-            Group Discussions
-            <span className="tab-badge">{activeGDsCount} Active</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            Discussions
+            <span className="tab-badge">{activeGDsCount}</span>
           </button>
           <button
             onClick={() => setActiveTab('users')}
             className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`}
           >
-            User Management
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            User Base
             <span className="tab-badge">{users.length}</span>
           </button>
         </div>
@@ -125,24 +139,26 @@ const AdminPanel = ({ user }) => {
         {activeTab === 'gds' && (
           <div className="table-container">
             <div className="table-header">
-              <h2 className="table-title">Discussion Rooms</h2>
+              <h2 className="table-title">Live Sessions</h2>
             </div>
             {gds.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-state-icon">📭</div>
-                <p>No group discussions found.</p>
+                <div className="empty-state-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                </div>
+                <p>No active discussions monitored.</p>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>Title & ID</th>
-                      <th>Moderator</th>
+                      <th>Title & Identity</th>
+                      <th>Host</th>
                       <th>Participants</th>
-                      <th>Status</th>
-                      <th>Created</th>
-                      <th>Actions</th>
+                      <th>Live Status</th>
+                      <th>Timestamp</th>
+                      <th>Control</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -150,19 +166,28 @@ const AdminPanel = ({ user }) => {
                       <tr key={gd._id}>
                         <td>
                           <div className="cell-main">{gd.title}</div>
-                          <div className="cell-sub">ID: {gd.roomId || gd._id.substring(0, 8)}...</div>
+                          <div className="cell-sub">RID: {gd.roomId || gd._id.substring(0, 8)}</div>
                         </td>
-                        <td>{gd.moderator?.name || 'N/A'}</td>
                         <td>
-                          <strong>{gd.participants?.length || 0}</strong> / {gd.maxParticipants}
+                          <div className="cell-main">{gd.moderator?.name || 'Unknown'}</div>
+                          <div className="cell-sub">{gd.moderator?.email}</div>
+                        </td>
+                        <td>
+                          <div className="cell-main">{gd.participants?.length || 0} / {gd.maxParticipants}</div>
+                          <div className="cell-sub">Members joined</div>
                         </td>
                         <td>
                           <span className={`status-badge ${gd.isActive ? 'active' : 'ended'}`}>
-                            {gd.isActive ? 'Live' : 'Ended'}
+                            {gd.isActive ? 'Live Now' : 'Completed'}
                           </span>
                         </td>
-                        <td className="cell-sub">
-                          {new Date(gd.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                        <td>
+                          <div className="cell-sub">
+                            {new Date(gd.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          </div>
+                          <div className="cell-sub">
+                            {new Date(gd.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
                         </td>
                         <td>
                           {gd.isActive && (
@@ -170,7 +195,7 @@ const AdminPanel = ({ user }) => {
                               onClick={() => handleForceEnd(gd._id)}
                               className="btn-action btn-force-end"
                             >
-                              Force End
+                              Terminate
                             </button>
                           )}
                         </td>
@@ -186,27 +211,38 @@ const AdminPanel = ({ user }) => {
         {/* Tab Content: Users */}
         {activeTab === 'users' && (
           <div className="table-container">
-            <div className="table-header">
-              <h2 className="table-title">Registered Users</h2>
+            <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 className="table-title">System Users</h2>
+              <div className="search-container">
+                <input 
+                  type="text" 
+                  placeholder="Search by name or email..." 
+                  className="admin-search-input"
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
-            {users.length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-state-icon">👥</div>
-                <p>No users registered yet.</p>
+                <div className="empty-state-icon">
+                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </div>
+                <p>{userSearchTerm ? `No users found matching "${userSearchTerm}"` : 'The user database is currently empty.'}</p>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>User Details</th>
-                      <th>Role</th>
-                      <th>Registered</th>
-                      <th>Actions</th>
+                      <th>Account Details</th>
+                      <th>Permissions</th>
+                      <th>Joined Date</th>
+                      <th>Operations</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
+                    {filteredUsers.map((u) => (
                       <tr key={u._id}>
                         <td>
                           <div className="cell-main">{u.name}</div>
@@ -214,11 +250,13 @@ const AdminPanel = ({ user }) => {
                         </td>
                         <td>
                           <span className={`status-badge ${u.email === 'admin@gd.com' ? 'active' : 'ended'}`}>
-                            {u.email === 'admin@gd.com' ? 'Administrator' : 'User'}
+                            {u.email === 'admin@gd.com' ? 'Super Admin' : 'Standard User'}
                           </span>
                         </td>
-                        <td className="cell-sub">
-                          {new Date(u.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                        <td>
+                          <div className="cell-sub">
+                             {new Date(u.createdAt).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </div>
                         </td>
                         <td>
                           {u.email !== 'admin@gd.com' && (
@@ -226,7 +264,7 @@ const AdminPanel = ({ user }) => {
                               onClick={() => handleDeleteUser(u._id, u.name)}
                               className="btn-action btn-delete"
                             >
-                              Delete
+                              Revoke Access
                             </button>
                           )}
                         </td>
@@ -244,3 +282,4 @@ const AdminPanel = ({ user }) => {
 };
 
 export default AdminPanel;
+
