@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Updated
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
@@ -150,7 +150,7 @@ export default function GDRoom({ user }) {
         .then(stream => {
           localStreamRef.current = stream;
           if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-          if (browserSupportsSpeechRecognition) {
+          if (browserSupportsSpeechRecognition && !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             startVoiceMode();
           }
         })
@@ -302,7 +302,7 @@ export default function GDRoom({ user }) {
     if (t) { 
       t.enabled = !t.enabled; 
       setIsAudioOn(t.enabled); 
-      if (t.enabled && browserSupportsSpeechRecognition) {
+      if (t.enabled && browserSupportsSpeechRecognition && !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         startVoiceMode();
       } else {
         stopVoiceMode();
@@ -351,6 +351,10 @@ export default function GDRoom({ user }) {
   /* ── voice mode (react-speech-recognition) ── */
   const startVoiceMode = () => {
     if (!browserSupportsSpeechRecognition) return;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      alert("Voice Mode (Speech Recognition) is often blocked on mobile while the camera/mic is active due to browser limitations.");
+    }
     setIsVoiceMode(true);
     setIsListening(true);
     resetTranscript();
