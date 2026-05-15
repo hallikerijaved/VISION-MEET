@@ -154,44 +154,90 @@ async function runResumeScore() {
   const d = getData();
   const btn = document.getElementById('score-btn');
   btn.disabled = true;
-  showStatus('Analyzing your resume…');
+  showStatus('Analyzing resume impact & structure…');
   const resultEl = document.getElementById('score-result');
   resultEl.innerHTML = '<div class="ai-spinner" style="margin:0 auto;"></div>';
 
   try {
     const resumeText = `Name: ${d.name}, Role: ${d.role}, Email: ${d.email}, Phone: ${d.phone}, Location: ${d.location}, Summary: ${d.summary}, Skills: ${window.skills.join(', ')}, Experience: ${window.experiences.map(e => e.title + ' at ' + e.company + ': ' + e.description).join(' | ')}, Education: ${window.educations.map(e => e.degree + ' at ' + e.school).join(' | ')}`;
+    
     let text;
     try {
-      text = await callAI(`Analyze this resume and give a score from 0-100. Resume: ${resumeText}. Return ONLY valid JSON in this exact format: {"score": 85, "strengths": ["strength1","strength2"], "missing": ["missing1","missing2"], "tips": ["tip1","tip2"]}`);
-      const json = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      const prompt = `Act as an expert career coach and professional resume reviewer.
+      Analyze this resume data and provide a rigorous evaluation based on modern recruitment standards (impact, quantifying results, skill relevance, and clarity).
+      
+      Resume Data: ${resumeText}
+      
+      Return ONLY a JSON object with this structure:
+      {
+        "score": number (0-100),
+        "strengths": ["string", "string"],
+        "missing": ["string", "string"],
+        "tips": ["specific actionable advice", "specific actionable advice"]
+      }
+      Do not include any other text or explanation.`;
+      
+      text = await callAI(prompt);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found');
+      const json = JSON.parse(jsonMatch[0]);
+      
       const score = json.score || 0;
-      const color = score >= 80 ? '#34d399' : score >= 60 ? '#f59e0b' : '#f87171';
+      const color = score >= 85 ? '#10b981' : score >= 70 ? '#f59e0b' : '#ef4444';
+      
       resultEl.innerHTML = `
-        <div class="score-circle" style="border-color:${color}">
-          <div class="score-num" style="color:${color}">${score}</div>
-          <div class="score-sub">/ 100</div>
-        </div>
-        ${json.strengths?.length ? `<div class="score-section"><div class="score-section-title" style="color:#34d399">✓ Strengths</div>${json.strengths.map(s => `<div class="score-item">• ${s}</div>`).join('')}</div>` : ''}
-        ${json.missing?.length ? `<div class="score-section"><div class="score-section-title" style="color:#f87171">✗ Missing</div>${json.missing.map(s => `<div class="score-item">• ${s}</div>`).join('')}</div>` : ''}
-        ${json.tips?.length ? `<div class="score-section"><div class="score-section-title" style="color:#f59e0b">💡 Tips</div>${json.tips.map(s => `<div class="score-item">• ${s}</div>`).join('')}</div>` : ''}`;
-    } catch (_) {
-      // local scoring
-      const checks = [!!d.name,!!d.role,!!d.email,!!d.phone,!!d.location,!!d.summary&&d.summary.length>50,window.skills.length>=3,window.experiences.some(e=>e.title&&e.description),window.educations.some(e=>e.degree)];
-      const score = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+        <div class="score-card">
+          <div class="score-circle" style="border-color:${color}44; background:${color}08">
+            <div class="score-num" style="color:${color}">${score}</div>
+            <div class="score-sub">Overall Score</div>
+          </div>
+          <div class="score-metrics">
+            ${json.strengths?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#10b981">✦ Top Strengths</div>
+              ${json.strengths.map(s => `<div class="score-item"><span>✓</span> ${s}</div>`).join('')}
+            </div>` : ''}
+            ${json.missing?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#ef4444">⚠ Critical Gaps</div>
+              ${json.missing.map(s => `<div class="score-item"><span>×</span> ${s}</div>`).join('')}
+            </div>` : ''}
+            ${json.tips?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#3b82f6">💡 Expert Advice</div>
+              ${json.tips.map(s => `<div class="score-item"><span>→</span> ${s}</div>`).join('')}
+            </div>` : ''}
+          </div>
+        </div>`;
+    } catch (err) {
+      console.error('Score Parse Error:', err);
+      // Enhanced weighted local scoring
+      let score = 0;
       const missing = [];
-      if (!d.name) missing.push('Full name');
-      if (!d.summary || d.summary.length < 50) missing.push('Professional summary (min 50 chars)');
-      if (window.skills.length < 3) missing.push('At least 3 skills');
-      if (!window.experiences.some(e => e.description)) missing.push('Experience descriptions');
-      const color = score >= 80 ? '#34d399' : score >= 60 ? '#f59e0b' : '#f87171';
+      
+      if (d.name) score += 10; else missing.push('Full contact information');
+      if (d.role) score += 10;
+      if (d.summary && d.summary.length > 100) score += 20; else if (d.summary) score += 10; else missing.push('Professional summary (impact-focused)');
+      if (window.skills.length >= 8) score += 20; else if (window.skills.length >= 4) score += 10; else missing.push('Technical & soft skill variety');
+      if (window.experiences.length >= 2) score += 20; else if (window.experiences.length >= 1) score += 10;
+      if (window.experiences.some(e => e.description && e.description.length > 100)) score += 20; else missing.push('Quantified achievements in experience');
+      
+      const color = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
       resultEl.innerHTML = `
-        <div class="score-circle" style="border-color:${color}">
-          <div class="score-num" style="color:${color}">${score}</div>
-          <div class="score-sub">/ 100</div>
-        </div>
-        ${missing.length ? `<div class="score-section"><div class="score-section-title" style="color:#f87171">✗ Missing</div>${missing.map(s => `<div class="score-item">• ${s}</div>`).join('')}</div>` : '<div style="color:#34d399;text-align:center;margin-top:12px;">Great resume!</div>'}`;
+        <div class="score-card">
+          <div class="score-circle" style="border-color:${color}44; background:${color}08">
+            <div class="score-num" style="color:${color}">${score}</div>
+            <div class="score-sub">Draft Score</div>
+          </div>
+          <div class="score-metrics">
+            <div class="score-section">
+              <div class="score-section-title" style="color:#ef4444">Areas for Improvement</div>
+              ${missing.map(s => `<div class="score-item"><span>×</span> ${s}</div>`).join('')}
+              <div class="score-item" style="margin-top:8px; opacity:0.8; font-style:italic; font-size:11px;">Note: Complete your profile for a more accurate AI analysis.</div>
+            </div>
+          </div>
+        </div>`;
     }
-  } catch (e) { resultEl.innerHTML = '<div style="color:var(--danger)">Analysis failed.</div>'; }
+  } catch (e) { 
+    resultEl.innerHTML = '<div class="alert alert-error">Analysis service temporarily unavailable.</div>'; 
+  }
   btn.disabled = false;
   hideStatus();
 }
@@ -201,46 +247,95 @@ async function runATSCheck() {
   const d = getData();
   const btn = document.getElementById('ats-btn');
   btn.disabled = true;
-  showStatus('Running ATS check…');
+  showStatus('Simulating ATS parsing engine…');
   const resultEl = document.getElementById('ats-result');
   resultEl.innerHTML = '<div class="ai-spinner" style="margin:0 auto;"></div>';
 
   try {
     const resumeText = `Role: ${d.role}, Summary: ${d.summary}, Skills: ${window.skills.join(', ')}, Experience: ${window.experiences.map(e => e.title + ' ' + e.description).join(' ')}`;
+    
     let text;
     try {
-      text = await callAI(`Check if this resume is ATS-friendly. Resume: ${resumeText}. Return ONLY valid JSON: {"ats_score": 78, "passed": ["check1","check2"], "failed": ["issue1","issue2"], "keywords_missing": ["kw1","kw2"]}`);
-      const json = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      const prompt = `Act as an ATS (Applicant Tracking System) parser.
+      Review the following resume for parseability, keyword density, and formatting issues that usually cause resumes to be rejected by automated systems.
+      
+      Resume Data: ${resumeText}
+      
+      Return ONLY a JSON object:
+      {
+        "ats_score": number (0-100),
+        "passed": ["string", "string"],
+        "failed": ["formatting or content issue", "formatting or content issue"],
+        "keywords_missing": ["industry keyword 1", "industry keyword 2"]
+      }
+      Do not include any other text.`;
+      
+      text = await callAI(prompt);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found');
+      const json = JSON.parse(jsonMatch[0]);
+      
       const score = json.ats_score || 0;
-      const color = score >= 75 ? '#34d399' : score >= 50 ? '#f59e0b' : '#f87171';
+      const color = score >= 75 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+      
       resultEl.innerHTML = `
-        <div class="score-circle" style="border-color:${color}">
-          <div class="score-num" style="color:${color}">${score}</div>
-          <div class="score-sub">ATS Score</div>
-        </div>
-        ${json.passed?.length ? `<div class="score-section"><div class="score-section-title" style="color:#34d399">✓ Passed</div>${json.passed.map(s=>`<div class="score-item">• ${s}</div>`).join('')}</div>` : ''}
-        ${json.failed?.length ? `<div class="score-section"><div class="score-section-title" style="color:#f87171">✗ Issues</div>${json.failed.map(s=>`<div class="score-item">• ${s}</div>`).join('')}</div>` : ''}
-        ${json.keywords_missing?.length ? `<div class="score-section"><div class="score-section-title" style="color:#f59e0b">Keywords to Add</div>${json.keywords_missing.map(s=>`<div class="score-item">• ${s}</div>`).join('')}</div>` : ''}`;
-    } catch (_) {
+        <div class="score-card">
+          <div class="score-circle" style="border-color:${color}44; background:${color}08">
+            <div class="score-num" style="color:${color}">${score}</div>
+            <div class="score-sub">ATS Compatibility</div>
+          </div>
+          <div class="score-metrics">
+            ${json.passed?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#10b981">✓ ATS Optimized</div>
+              ${json.passed.map(s => `<div class="score-item"><span>✓</span> ${s}</div>`).join('')}
+            </div>` : ''}
+            ${json.failed?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#ef4444">✗ Parse Issues</div>
+              ${json.failed.map(s => `<div class="score-item"><span>!</span> ${s}</div>`).join('')}
+            </div>` : ''}
+            ${json.keywords_missing?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#f59e0b">Suggested Keywords</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+                ${json.keywords_missing.map(s => `<span class="skill-tag" style="font-size:10px; padding:2px 6px;">${s}</span>`).join('')}
+              </div>
+            </div>` : ''}
+          </div>
+        </div>`;
+    } catch (err) {
+      console.error('ATS Parse Error:', err);
+      // Local ATS heuristic check
       const issues = [];
       const passed = [];
-      if (d.name) passed.push('Name present'); else issues.push('Missing name');
-      if (d.email) passed.push('Email present'); else issues.push('Missing email');
-      if (d.phone) passed.push('Phone present'); else issues.push('Missing phone');
-      if (window.skills.length >= 5) passed.push('Good skill count'); else issues.push('Add more skills (5+)');
-      if (d.summary) passed.push('Summary present'); else issues.push('Missing summary');
-      if (window.experiences.some(e => e.description && e.description.length > 50)) passed.push('Detailed experience'); else issues.push('Add detailed experience descriptions');
+      
+      if (d.role) passed.push('Job title clarity'); else issues.push('Missing targeted job title');
+      if (window.skills.length >= 6) passed.push('Keyword density'); else issues.push('Low keyword count (aim for 10+)');
+      if (window.experiences.every(e => e.description && e.description.length > 30)) passed.push('Standard formatting'); else issues.push('Experience descriptions too short for parsing');
+      if (!d.summary?.includes('placeholder')) passed.push('Unique content'); else issues.push('Generic summary detected');
+      
       const score = Math.round((passed.length / (passed.length + issues.length)) * 100);
-      const color = score >= 75 ? '#34d399' : score >= 50 ? '#f59e0b' : '#f87171';
+      const color = score >= 75 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+      
       resultEl.innerHTML = `
-        <div class="score-circle" style="border-color:${color}">
-          <div class="score-num" style="color:${color}">${score}</div>
-          <div class="score-sub">ATS Score</div>
-        </div>
-        <div class="score-section"><div class="score-section-title" style="color:#34d399">✓ Passed</div>${passed.map(s=>`<div class="score-item">• ${s}</div>`).join('')}</div>
-        ${issues.length ? `<div class="score-section"><div class="score-section-title" style="color:#f87171">✗ Issues</div>${issues.map(s=>`<div class="score-item">• ${s}</div>`).join('')}</div>` : ''}`;
+        <div class="score-card">
+          <div class="score-circle" style="border-color:${color}44; background:${color}08">
+            <div class="score-num" style="color:${color}">${score}</div>
+            <div class="score-sub">ATS Heuristic</div>
+          </div>
+          <div class="score-metrics">
+            <div class="score-section">
+              <div class="score-section-title" style="color:#10b981">Heuristic Success</div>
+              ${passed.map(s => `<div class="score-item"><span>✓</span> ${s}</div>`).join('')}
+            </div>
+            ${issues.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#ef4444">Potential Dealbreakers</div>
+              ${issues.map(s => `<div class="score-item"><span>!</span> ${s}</div>`).join('')}
+            </div>` : ''}
+          </div>
+        </div>`;
     }
-  } catch (e) { resultEl.innerHTML = '<div style="color:var(--danger)">Check failed.</div>'; }
+  } catch (e) { 
+    resultEl.innerHTML = '<div class="alert alert-error">ATS engine failed to initialize.</div>'; 
+  }
   btn.disabled = false;
   hideStatus();
 }
@@ -251,7 +346,7 @@ async function generateCoverLetter() {
   if (!d.name || !d.role) { alert('Please fill in your name and role first.'); return; }
   const btn = document.getElementById('cover-btn');
   btn.disabled = true;
-  showStatus('Writing your cover letter…');
+  showStatus('Writing your premium cover letter…');
   const resultEl = document.getElementById('cover-result');
   resultEl.value = '';
 
@@ -259,21 +354,44 @@ async function generateCoverLetter() {
     const jobDesc = document.getElementById('cover-job-desc')?.value || '';
     let text;
     try {
-      text = await callAI(`Write a professional cover letter for ${d.name} applying for a ${d.role} position. ${jobDesc ? 'Job description: ' + jobDesc : ''} Their summary: ${d.summary || 'experienced professional'}. Skills: ${window.skills.slice(0,5).join(', ')}. Experience: ${window.experiences.filter(e=>e.title).map(e=>e.title+' at '+e.company).join(', ')}. Write 3 paragraphs: opening, skills/experience match, closing. Professional tone. No placeholders.`);
+      const prompt = `Act as an executive career coach. Write a high-impact, consultative cover letter for ${d.name} for a ${d.role} role.
+      ${jobDesc ? 'Tailor the letter specifically to these requirements: ' + jobDesc : ''}
+      
+      Candidate Profile:
+      - Summary: ${d.summary}
+      - Core Competencies: ${window.skills.join(', ')}
+      - Latest Experience: ${window.experiences[0]?.title || 'Professional'} at ${window.experiences[0]?.company || 'Current Company'}
+      
+      Requirements:
+      - Tone: Professional, persuasive, and results-oriented.
+      - Length: ~250-300 words.
+      - Structure: Compelling hook, evidence-based value proposition, and professional call to action.
+      - Strictly NO placeholders or brackets like [Company Name]. If details are missing, write naturally.`;
+      
+      text = await callAI(prompt);
+      text = text.replace(/```[a-z]*\n?/g, '').replace(/```/g, '').trim();
     } catch (_) {
       const exp = window.experiences.find(e => e.title) || {};
       text = `Dear Hiring Manager,\n\nI am writing to express my strong interest in the ${d.role} position. With my background in ${window.skills.slice(0,3).join(', ')}, I am confident in my ability to make a meaningful contribution to your team.\n\n${exp.title ? `In my previous role as ${exp.title}${exp.company ? ' at ' + exp.company : ''}, I ${exp.description ? exp.description.split('\n')[0].toLowerCase() : 'delivered impactful results and consistently exceeded expectations'}.` : `I bring a strong foundation of skills including ${window.skills.slice(0,4).join(', ')}, and a proven track record of delivering results.`} I am passionate about ${d.role.toLowerCase()} and thrive in collaborative, fast-paced environments.\n\nI would welcome the opportunity to discuss how my experience aligns with your needs. Thank you for your time and consideration.\n\nSincerely,\n${d.name}`;
     }
-    resultEl.value = text.trim();
+    resultEl.value = text;
     document.getElementById('cover-output-wrap').style.display = 'block';
-  } catch (e) { alert('Generation failed. Please try again.'); }
+  } catch (e) { 
+    alert('Cover letter generation failed. Please check your connection.'); 
+  }
   btn.disabled = false;
   hideStatus();
 }
 
 function copyCoverLetter() {
   const el = document.getElementById('cover-result');
-  navigator.clipboard.writeText(el.value).then(() => showToast('Cover letter copied!'));
+  if (!el.value) return;
+  navigator.clipboard.writeText(el.value).then(() => {
+    const btn = document.querySelector('.btn-ghost.btn-sm[onclick="copyCoverLetter()"]');
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = '<span>✓</span> Copied!';
+    setTimeout(() => btn.innerHTML = oldHtml, 2000);
+  });
 }
 
 // ===================== JOB DESCRIPTION MATCH =====================
@@ -290,35 +408,92 @@ async function runJobMatch() {
   try {
     let text;
     try {
-      text = await callAI(`Compare this resume to the job description and suggest improvements. Resume: Name: ${d.name}, Role: ${d.role}, Summary: ${d.summary}, Skills: ${window.skills.join(', ')}, Experience: ${window.experiences.map(e=>e.title+' '+e.description).join(' ')}. Job Description: ${jobDesc}. Return ONLY valid JSON: {"match_score": 72, "matched_keywords": ["kw1","kw2"], "missing_keywords": ["kw1","kw2"], "suggestions": ["suggestion1","suggestion2"]}`);
-      const json = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      const prompt = `Act as a recruitment specialist. Compare this candidate's resume against the provided Job Description.
+      Identify keyword matches, missing critical keywords, and provide a match percentage.
+      
+      Resume Data: Summary: ${d.summary}, Skills: ${window.skills.join(', ')}, Experience: ${window.experiences.map(e=>e.title+' '+e.description).join(' ')}
+      Job Description: ${jobDesc}
+      
+      Return ONLY a JSON object:
+      {
+        "match_score": number (0-100),
+        "matched_keywords": ["string", "string"],
+        "missing_keywords": ["string", "string"],
+        "suggestions": ["how to better align the resume", "how to better align the resume"]
+      }
+      Do not include any other text.`;
+      
+      text = await callAI(prompt);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found');
+      const json = JSON.parse(jsonMatch[0]);
+      
       const score = json.match_score || 0;
-      const color = score >= 75 ? '#34d399' : score >= 50 ? '#f59e0b' : '#f87171';
+      const color = score >= 75 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+      
       resultEl.innerHTML = `
-        <div class="score-circle" style="border-color:${color}">
-          <div class="score-num" style="color:${color}">${score}</div>
-          <div class="score-sub">Match %</div>
-        </div>
-        ${json.matched_keywords?.length ? `<div class="score-section"><div class="score-section-title" style="color:#34d399">✓ Matched Keywords</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${json.matched_keywords.map(k=>`<span class="skill-tag">${k}</span>`).join('')}</div></div>` : ''}
-        ${json.missing_keywords?.length ? `<div class="score-section"><div class="score-section-title" style="color:#f87171">✗ Missing Keywords</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${json.missing_keywords.map(k=>`<span class="skill-tag" style="border-color:rgba(248,113,113,0.3);color:#f87171;">${k}</span>`).join('')}</div></div>` : ''}
-        ${json.suggestions?.length ? `<div class="score-section"><div class="score-section-title" style="color:#f59e0b">💡 Suggestions</div>${json.suggestions.map(s=>`<div class="score-item">• ${s}</div>`).join('')}</div>` : ''}
-        <button class="ai-btn mt-8" onclick="applyJobKeywords(${JSON.stringify(json.missing_keywords||[]).replace(/"/g,'&quot;')})">✦ Add Missing Keywords to Skills</button>`;
-    } catch (_) {
+        <div class="score-card">
+          <div class="score-circle" style="border-color:${color}44; background:${color}08">
+            <div class="score-num" style="color:${color}">${score}</div>
+            <div class="score-sub">Match Rate</div>
+          </div>
+          <div class="score-metrics">
+            ${json.matched_keywords?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#10b981">✓ Matched Keywords</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+                ${json.matched_keywords.map(k => `<span class="skill-tag" style="background:rgba(16,185,129,0.1); color:#10b981; border-color:rgba(16,185,129,0.2)">${k}</span>`).join('')}
+              </div>
+            </div>` : ''}
+            ${json.missing_keywords?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#ef4444">✗ Missing Keywords</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+                ${json.missing_keywords.map(k => `<span class="skill-tag" style="background:rgba(239,68,68,0.05); color:#ef4444; border-color:rgba(239,68,68,0.15)">${k}</span>`).join('')}
+              </div>
+            </div>` : ''}
+            ${json.suggestions?.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#3b82f6">💡 Tailoring Tips</div>
+              ${json.suggestions.map(s => `<div class="score-item"><span>→</span> ${s}</div>`).join('')}
+            </div>` : ''}
+            <button class="ai-btn mt-12" onclick="applyJobKeywords(${JSON.stringify(json.missing_keywords || []).replace(/"/g, '&quot;')})">✦ Auto-Apply Missing Skills</button>
+          </div>
+        </div>`;
+    } catch (err) {
+      console.error('Job Match Error:', err);
+      // Smarter local matching
       const jdWords = jobDesc.toLowerCase().split(/\W+/).filter(w => w.length > 4);
-      const myWords = (window.skills.join(' ') + ' ' + d.summary + ' ' + window.experiences.map(e=>e.description).join(' ')).toLowerCase();
-      const matched = [...new Set(jdWords.filter(w => myWords.includes(w)))].slice(0, 8);
-      const missing = [...new Set(jdWords.filter(w => !myWords.includes(w) && w.length > 5))].slice(0, 6);
+      const myContent = (window.skills.join(' ') + ' ' + d.summary + ' ' + window.experiences.map(e=>e.description).join(' ')).toLowerCase();
+      
+      const matched = [...new Set(jdWords.filter(w => myContent.includes(w)))].slice(0, 10);
+      const missing = [...new Set(jdWords.filter(w => !myContent.includes(w)))].slice(0, 8);
+      
       const score = Math.min(95, Math.round((matched.length / Math.max(matched.length + missing.length, 1)) * 100));
-      const color = score >= 75 ? '#34d399' : score >= 50 ? '#f59e0b' : '#f87171';
+      const color = score >= 75 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+      
       resultEl.innerHTML = `
-        <div class="score-circle" style="border-color:${color}">
-          <div class="score-num" style="color:${color}">${score}</div>
-          <div class="score-sub">Match %</div>
-        </div>
-        ${matched.length ? `<div class="score-section"><div class="score-section-title" style="color:#34d399">✓ Matched</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${matched.map(k=>`<span class="skill-tag">${k}</span>`).join('')}</div></div>` : ''}
-        ${missing.length ? `<div class="score-section"><div class="score-section-title" style="color:#f87171">✗ Missing</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${missing.map(k=>`<span class="skill-tag" style="border-color:rgba(248,113,113,0.3);color:#f87171;">${k}</span>`).join('')}</div></div>` : ''}`;
+        <div class="score-card">
+          <div class="score-circle" style="border-color:${color}44; background:${color}08">
+            <div class="score-num" style="color:${color}">${score}</div>
+            <div class="score-sub">Keyword Match</div>
+          </div>
+          <div class="score-metrics">
+            <div class="score-section">
+              <div class="score-section-title" style="color:#10b981">Found in JD</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                ${matched.map(k => `<span class="skill-tag">${k}</span>`).join('')}
+              </div>
+            </div>
+            ${missing.length ? `<div class="score-section">
+              <div class="score-section-title" style="color:#ef4444">Gaps Detected</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                ${missing.map(k => `<span class="skill-tag" style="color:#ef4444; border-color:rgba(239,68,68,0.2)">${k}</span>`).join('')}
+              </div>
+            </div>` : ''}
+          </div>
+        </div>`;
     }
-  } catch (e) { resultEl.innerHTML = '<div style="color:var(--danger)">Match failed.</div>'; }
+  } catch (e) { 
+    resultEl.innerHTML = '<div class="alert alert-error">Matching service failed.</div>'; 
+  }
   btn.disabled = false;
   hideStatus();
 }

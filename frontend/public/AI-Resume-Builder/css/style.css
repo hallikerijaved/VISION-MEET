@@ -188,15 +188,21 @@ textarea { resize: vertical; min-height: 75px; line-height: 1.6; }
 
 /* ===================== TOOLS TAB ===================== */
 .tool-desc { font-size: 11px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
-.tool-result { margin-top: 10px; }
+/* Score card */
+.score-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px; }
+.score-circle { width: 84px; height: 84px; border-radius: 50%; border: 4px solid; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 16px; transition: all 0.3s ease; }
+.score-num { font-size: 26px; font-weight: 800; line-height: 1; }
+.score-sub { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; margin-top: 2px; }
 
-/* Score circle */
-.score-circle { width: 90px; height: 90px; border-radius: 50%; border: 4px solid; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 14px; }
-.score-num { font-size: 28px; font-weight: 800; line-height: 1; }
-.score-sub { font-size: 10px; color: var(--text2); }
-.score-section { margin-bottom: 10px; }
-.score-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
-.score-item { font-size: 11px; color: var(--text2); padding: 2px 0; line-height: 1.5; }
+.score-metrics { display: flex; flexDirection: column; gap: 12px; }
+.score-section { border-top: 1px solid var(--border); padding-top: 10px; }
+.score-section:first-child { border-top: none; padding-top: 0; }
+.score-section-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+.score-item { font-size: 11px; color: var(--text2); padding: 3px 0; line-height: 1.4; display: flex; gap: 6px; align-items: flex-start; }
+.score-item span { font-weight: 800; flex-shrink: 0; }
+
+.alert { padding: 10px; border-radius: var(--radius-xs); font-size: 11px; font-weight: 500; }
+.alert-error { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
 
 /* Resume list */
 .resume-list-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-xs); margin-bottom: 6px; }
