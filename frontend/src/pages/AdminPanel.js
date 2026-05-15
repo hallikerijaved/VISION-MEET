@@ -86,31 +86,45 @@ const AdminPanel = ({ user }) => {
         
         {/* Dashboard Metrics */}
         <div className="stats-grid">
-          <div className="stat-card">
+          <div className="stat-card stat-users">
+            <div className="stat-glow"></div>
             <div className="stat-icon primary">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3525cd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
             </div>
             <div className="stat-details">
               <span className="stat-title">Total Users</span>
               <span className="stat-value">{users.length}</span>
             </div>
+            <div className="stat-arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </div>
           </div>
-          <div className="stat-card">
+
+          <div className="stat-card stat-sessions">
+            <div className="stat-glow"></div>
             <div className="stat-icon success">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.6 11.6L22 7L15.6 2.4"></path><path d="M2 17l6-4.6L2 7.8"></path><path d="M12 22v-5l6-4.6"></path><path d="M12 2v5l-6 4.6"></path></svg>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15.6 11.6L22 7L15.6 2.4"></path><path d="M2 17l6-4.6L2 7.8"></path><path d="M12 22v-5l6-4.6"></path><path d="M12 2v5l-6 4.6"></path></svg>
             </div>
             <div className="stat-details">
               <span className="stat-title">Active Sessions</span>
               <span className="stat-value">{activeGDsCount}</span>
             </div>
+            <div className="stat-arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </div>
           </div>
-          <div className="stat-card">
+
+          <div className="stat-card stat-gds">
+            <div className="stat-glow"></div>
             <div className="stat-icon warning">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
             </div>
             <div className="stat-details">
               <span className="stat-title">Total GDs</span>
               <span className="stat-value">{gds.length}</span>
+            </div>
+            <div className="stat-arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </div>
           </div>
         </div>
