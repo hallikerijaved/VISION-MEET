@@ -7,7 +7,7 @@ const ResumeBuilder = ({ user }) => {
       <Navigation user={user} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <iframe 
-          src="/AI-Resume-Builder/index.html" 
+          src={`${window.location.origin}/AI-Resume-Builder/index.html`} 
           title="AI Resume Builder"
           style={{ width: '100%', flex: 1, border: 'none' }}
         />
