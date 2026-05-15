@@ -349,3 +349,66 @@ input.input-error, textarea.input-error {
   animation: fadeIn 0.15s ease;
 }
 .field-error::before { content: '⚠'; font-size: 10px; }
+
+/* ===================== STITCH MODERN TEMPLATE ===================== */
+.resume-stitch-modern { font-family: 'Inter', sans-serif; color: #0f172a; padding: 48px; background: #fff; position: relative; overflow: hidden; }
+.resume-stitch-modern::before { content: ''; position: absolute; top: -100px; right: -100px; width: 300px; height: 300px; background: rgba(79, 70, 229, 0.03); border-radius: 50%; filter: blur(60px); z-index: 0; }
+
+.rsm-header { position: relative; z-index: 1; margin-bottom: 32px; border-bottom: 1px solid #f1f5f9; padding-bottom: 24px; }
+.rsm-name { font-family: 'Manrope', sans-serif; font-size: 36px; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(90deg, #4f46e5, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.1; }
+.rsm-role { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 600; color: #64748b; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.rsm-contact { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+.rsm-contact-item { font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+
+.rsm-summary-box { background: rgba(248, 250, 252, 0.8); border: 1px solid #f1f5f9; border-radius: 12px; padding: 20px; margin-bottom: 32px; position: relative; z-index: 1; backdrop-filter: blur(8px); }
+.rsm-summary-box p { font-size: 13.5px; color: #334155; line-height: 1.7; font-weight: 400; }
+
+.rsm-section { margin-bottom: 32px; position: relative; z-index: 1; }
+.rsm-section-title { font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #4f46e5; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.rsm-section-title::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
+
+.rsm-item { margin-bottom: 20px; }
+.rsm-item-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.rsm-item-title { font-size: 15px; font-weight: 700; color: #1e293b; }
+.rsm-item-date { font-size: 12px; color: #94a3b8; font-weight: 500; }
+.rsm-item-sub { font-size: 13px; color: #4f46e5; font-weight: 600; margin-bottom: 6px; }
+.rsm-item-desc { font-size: 13px; color: #475569; line-height: 1.6; white-space: pre-line; }
+
+.rsm-skills { display: flex; flex-wrap: wrap; gap: 8px; }
+.rsm-skill { font-size: 11px; font-weight: 600; color: #4f46e5; background: rgba(79, 70, 229, 0.06); padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(79, 70, 229, 0.1); }
+
+/* ===================== STITCH ELITE TEMPLATE ===================== */
+.resume-stitch-executive { font-family: 'Inter', sans-serif; display: grid; grid-template-columns: 240px 1fr; min-height: 880px; background: #fff; }
+
+.rse-sidebar { background: #0f172a; color: #f8fafc; padding: 48px 32px; display: flex; flex-direction: column; gap: 32px; }
+.rse-side-section-title { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; margin-bottom: 12px; }
+
+.rse-contact-item { margin-bottom: 12px; }
+.rse-contact-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin-bottom: 2px; }
+.rse-contact-val { font-size: 12px; color: #cbd5e1; word-break: break-all; }
+
+.rse-skill-item { margin-bottom: 10px; }
+.rse-skill-name { font-size: 11.5px; color: #e2e8f0; margin-bottom: 4px; }
+.rse-skill-bar { height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; overflow: hidden; }
+.rse-skill-fill { height: 100%; background: #4f46e5; }
+
+.rse-edu-item { margin-bottom: 16px; }
+.rse-edu-degree { font-size: 12px; font-weight: 700; color: #fff; }
+.rse-edu-school { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+.rse-main { padding: 48px 40px; }
+.rse-name { font-family: 'Manrope', sans-serif; font-size: 42px; font-weight: 800; color: #0f172a; letter-spacing: -0.04em; line-height: 1; }
+.rse-role { font-family: 'Manrope', sans-serif; font-size: 18px; color: #4f46e5; font-weight: 600; margin-top: 8px; margin-bottom: 24px; }
+.rse-summary { font-size: 14px; color: #475569; line-height: 1.7; margin-bottom: 40px; padding-left: 16px; border-left: 2px solid #f1f5f9; }
+
+.rse-section { margin-bottom: 32px; }
+.rse-section-title { font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.rse-section-title::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
+
+.rse-exp { margin-bottom: 24px; }
+.rse-exp-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.rse-exp-title { font-size: 16px; font-weight: 700; color: #1e293b; }
+.rse-exp-date { font-size: 12px; color: #94a3b8; font-weight: 600; }
+.rse-exp-company { font-size: 13px; color: #4f46e5; font-weight: 600; margin-bottom: 8px; }
+.rse-exp-desc { font-size: 13px; color: #475569; line-height: 1.65; white-space: pre-line; }
+

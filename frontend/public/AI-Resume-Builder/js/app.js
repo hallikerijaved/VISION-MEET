@@ -443,6 +443,8 @@ function updatePreview() {
   else if (t === 'modern') output.innerHTML = renderModern(d, window.skills, window.experiences, window.educations, a);
   else if (t === 'minimal') output.innerHTML = renderMinimal(d, window.skills, window.experiences, window.educations, a);
   else if (t === 'creative') output.innerHTML = renderCreative(d, window.skills, window.experiences, window.educations, a);
+  else if (t === 'stitch-modern') output.innerHTML = renderStitchModern(d, window.skills, window.experiences, window.educations, a);
+  else if (t === 'stitch-executive') output.innerHTML = renderStitchExecutive(d, window.skills, window.experiences, window.educations, a);
 }
 
 // ===================== EXPORT WITH VALIDATION =====================

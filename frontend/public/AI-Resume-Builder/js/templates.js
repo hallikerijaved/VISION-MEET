@@ -150,3 +150,135 @@ function renderCreative(d, skills, experiences, educations, accent) {
     </div>
   </div>`;
 }
+
+function renderStitchModern(d, skills, experiences, educations, accent) {
+  const expHtml = experiences.filter(e => e.title || e.company).map(e => `
+    <div class="rsm-item">
+      <div class="rsm-item-head">
+        <div class="rsm-item-title">${e.title || ''}</div>
+        <div class="rsm-item-date">${e.dates || ''}</div>
+      </div>
+      <div class="rsm-item-sub">${e.company || ''}</div>
+      <div class="rsm-item-desc">${e.description || ''}</div>
+    </div>`).join('');
+
+  const eduHtml = educations.filter(e => e.degree || e.school).map(e => `
+    <div class="rsm-item">
+      <div class="rsm-item-head">
+        <div class="rsm-item-title">${e.degree || ''}</div>
+        <div class="rsm-item-date">${e.dates || ''}</div>
+      </div>
+      <div class="rsm-item-sub">${e.school || ''}</div>
+    </div>`).join('');
+
+  const skillsHtml = skills.map(s => `<div class="rsm-skill">${s}</div>`).join('');
+
+  return `
+    <div class="resume-stitch-modern">
+      <header class="rsm-header">
+        <div class="rsm-name">${d.name || 'Your Name'}</div>
+        <div class="rsm-role">${d.role || ''}</div>
+        <div class="rsm-contact">
+          ${d.email ? `<div class="rsm-contact-item">✉ ${d.email}</div>` : ''}
+          ${d.phone ? `<div class="rsm-contact-item">✆ ${d.phone}</div>` : ''}
+          ${d.location ? `<div class="rsm-contact-item">⌖ ${d.location}</div>` : ''}
+          ${d.website ? `<div class="rsm-contact-item">⇗ ${d.website}</div>` : ''}
+        </div>
+      </header>
+
+      ${d.summary ? `
+      <div class="rsm-summary-box">
+        <p>${d.summary}</p>
+      </div>` : ''}
+
+      <div style="display: grid; grid-template-columns: 1fr; gap: 32px;">
+        ${expHtml ? `
+        <section class="rsm-section">
+          <div class="rsm-section-title">Experience</div>
+          ${expHtml}
+        </section>` : ''}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+          ${eduHtml ? `
+          <section class="rsm-section">
+            <div class="rsm-section-title">Education</div>
+            ${eduHtml}
+          </section>` : ''}
+
+          ${skillsHtml ? `
+          <section class="rsm-section">
+            <div class="rsm-section-title">Expertise</div>
+            <div class="rsm-skills">${skillsHtml}</div>
+          </section>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderStitchExecutive(d, skills, experiences, educations, accent) {
+  const expHtml = experiences.filter(e => e.title || e.company).map(e => `
+    <div class="rse-exp">
+      <div class="rse-exp-head">
+        <div class="rse-exp-title">${e.title || ''}</div>
+        <div class="rse-exp-date">${e.dates || ''}</div>
+      </div>
+      <div class="rse-exp-company">${e.company || ''}</div>
+      <div class="rse-exp-desc">${e.description || ''}</div>
+    </div>`).join('');
+
+  const eduHtml = educations.filter(e => e.degree || e.school).map(e => `
+    <div class="rse-edu-item">
+      <div class="rse-edu-degree">${e.degree || ''}</div>
+      <div class="rse-edu-school">${e.school || ''}</div>
+    </div>`).join('');
+
+  const skillsHtml = skills.map((s, i) => `
+    <div class="rse-skill-item">
+      <div class="rse-skill-name">${s}</div>
+      <div class="rse-skill-bar"><div class="rse-skill-fill" style="width:${95 - i * 5}%"></div></div>
+    </div>`).join('');
+
+  return `
+    <div class="resume-stitch-executive">
+      <aside class="rse-sidebar">
+        <section>
+          <div class="rse-side-section-title">Contact Info</div>
+          ${d.email ? `<div class="rse-contact-item"><div class="rse-contact-label">Email</div><div class="rse-contact-val">${d.email}</div></div>` : ''}
+          ${d.phone ? `<div class="rse-contact-item"><div class="rse-contact-label">Phone</div><div class="rse-contact-val">${d.phone}</div></div>` : ''}
+          ${d.location ? `<div class="rse-contact-item"><div class="rse-contact-label">Location</div><div class="rse-contact-val">${d.location}</div></div>` : ''}
+          ${d.website ? `<div class="rse-contact-item"><div class="rse-contact-label">Link</div><div class="rse-contact-val">${d.website}</div></div>` : ''}
+        </section>
+
+        ${skillsHtml ? `
+        <section>
+          <div class="rse-side-section-title">Core Skills</div>
+          ${skillsHtml}
+        </section>` : ''}
+
+        ${eduHtml ? `
+        <section>
+          <div class="rse-side-section-title">Academic History</div>
+          ${eduHtml}
+        </section>` : ''}
+      </aside>
+
+      <main class="rse-main">
+        <div class="rse-name">${d.name || 'Your Name'}</div>
+        <div class="rse-role">${d.role || ''}</div>
+
+        ${d.summary ? `
+        <div class="rse-summary">
+          ${d.summary}
+        </div>` : ''}
+
+        ${expHtml ? `
+        <section class="rse-section">
+          <div class="rse-section-title">Professional Experience</div>
+          ${expHtml}
+        </section>` : ''}
+      </main>
+    </div>
+  `;
+}
+
