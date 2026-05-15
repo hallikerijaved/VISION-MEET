@@ -1,11 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/AI-Resume-Builder/(.*)",
-      "destination": "/AI-Resume-Builder/$1"
-    },
-    {
-      "source": "/((?!AI-Resume-Builder|static|favicon.ico|favi.png|manifest.json|robots.txt).*)",
+      "source": "/((?!api|AI-Resume-Builder|static|.*\\..*).*)",
       "destination": "/index.html"
     }
   ],
