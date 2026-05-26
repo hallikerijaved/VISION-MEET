@@ -1,6 +1,6 @@
-# GD Platform - Group Discussion Video Conferencing
+# VISION MEET - AI-Powered Group Discussion Platform
 
-A complete web platform for conducting group discussions with video conferencing, real-time chat, and moderator controls.
+A complete web platform for conducting group discussions with video conferencing, real-time AI evaluation, NLP analysis, and moderator controls.
 
 ## Features
 
@@ -8,6 +8,10 @@ A complete web platform for conducting group discussions with video conferencing
 - **📊 Enhanced Dashboard** - Statistics, quick actions, and trending discussions
 - **🎥 Video Conferencing** - Browser-based video/audio with WebRTC
 - **💬 Real-time Chat** - Text messaging during discussions
+- **🤖 AI Evaluation** - Gemini-powered personalized feedback after each session
+- **🧠 NLP Analysis** - Semantic similarity, keyword matching, grammar, confidence scoring
+- **📝 GD Transcript** - Auto-generated transcript of the entire discussion
+- **📈 Results Dashboard** - Detailed performance breakdown per participant
 - **👨‍💼 Moderator Controls** - Session management and participant control
 - **🔗 Shareable Links** - Easy sharing of GD sessions
 - **⚡ Auto-close Sessions** - Automatic cleanup when no participants
@@ -22,65 +26,92 @@ A complete web platform for conducting group discussions with video conferencing
 - **Database**: MongoDB
 - **Real-time**: Socket.IO
 - **Video**: WebRTC (getUserMedia API)
+- **AI**: Google Gemini API
+- **NLP Microservice**: Python + FastAPI + sentence-transformers + KeyBERT + LanguageTool
+
+## Project Structure
+
+```
+VISION-MEET/
+├── backend/
+│   ├── models/              # MongoDB schemas (User, GD, GDSession, Participant, Evaluation)
+│   ├── routes/              # API endpoints (auth, gd, evaluation, realtimeInterview, admin)
+│   ├── middleware/          # Authentication middleware
+│   ├── services/
+│   │   └── aiAnalysis.js    # Gemini AI + NLP microservice integration
+│   └── server.js            # Main server with Socket.IO
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Navigation, GDTranscript
+│   │   ├── pages/           # Dashboard, GDRoom, Evaluations, ResultsDashboard, etc.
+│   │   └── utils/           # API utilities
+│   └── public/
+├── nlp-service/
+│   ├── app.py               # FastAPI app
+│   ├── evaluator.py         # NLP scoring engine
+│   └── requirements.txt
+└── package.json
+```
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js (v14+)
+- Python (v3.9+)
 - MongoDB (local or MongoDB Atlas)
-- Make sure MongoDB service is running
+- Google Gemini API key
 
 ### Installation
 
-1. **Install all dependencies**:
+1. **Install Node dependencies**:
    ```bash
    npm run install-all
    ```
 
-2. **Start MongoDB**:
+2. **Install Python dependencies**:
    ```bash
-   # Windows (run as administrator)
+   cd nlp-service
+   pip install -r requirements.txt
+   ```
+
+3. **Configure environment** — create `backend/.env`:
+   ```env
+   MONGODB_URI=mongodb://localhost:27017/gd-platform
+   JWT_SECRET=your_secret_key
+   PORT=5001
+   GEMINI_API_KEY=your_gemini_api_key
+   NLP_SERVICE_URL=http://localhost:8000
+   ```
+
+4. **Start all services**:
+
+   **MongoDB**:
+   ```bash
    net start MongoDB
    ```
 
-3. **Configure environment**:
-   - Update `backend/.env` with your MongoDB URI
-   - Change JWT_SECRET to a secure random string
-
-4. **Start development servers**:
+   **NLP Service**:
    ```bash
+   cd nlp-service
+   uvicorn app:app --host 0.0.0.0 --port 8000
+   ```
+
+   **Backend**:
+   ```bash
+   cd backend
    npm run dev
    ```
 
+   **Frontend**:
+   ```bash
+   cd frontend
+   npm start
+   ```
+
 This will start:
-- Backend server on http://localhost:5001
-- Frontend app on http://localhost:3000
-
-### Manual Setup
-
-If you prefer to run servers separately:
-
-**Start MongoDB first**:
-```bash
-# Windows (run as administrator)
-net start MongoDB
-# OR start MongoDB manually if not installed as service
-mongod
-```
-
-**Backend**:
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-**Frontend**:
-```bash
-cd frontend
-npm install
-npm start
-```
+- NLP Service on http://localhost:8000
+- Backend on http://localhost:5001
+- Frontend on http://localhost:3000
 
 ## Usage
 
@@ -88,36 +119,15 @@ npm start
 1. **Register/Login** - Create account or login
 2. **Main Dashboard** - View statistics and trending discussions
 3. **Create GD** - Start new discussions with custom settings
-4. **Browse GDs** - Search and filter all available discussions
-5. **My GDs** - View your created and participated discussions
-6. **Join Sessions** - One-click join or use shareable links
-7. **Video Controls** - Toggle video/audio during session
-8. **Real-time Chat** - Text messaging alongside video
+4. **Join Sessions** - One-click join or use shareable links
+5. **Video Controls** - Toggle video/audio during session
+6. **Real-time Chat** - Text messaging alongside video
+7. **View Results** - Get AI + NLP evaluation after the session
 
 ### Admin Access
-1. **Login with admin@gd.com** (register this email first)
+1. Login with `admin@gd.com` (register this email first)
 2. **Admin Panel** - Monitor all ongoing GDs and users
 3. **Force End GDs** - Terminate any active discussion
-4. **Real-time Updates** - Auto-refresh every 5 seconds
-
-## Project Structure
-
-```
-gd-platform/
-├── backend/
-│   ├── models/          # MongoDB schemas (User, GD)
-│   ├── routes/          # API endpoints (auth, gd, admin)
-│   ├── middleware/      # Authentication middleware
-│   └── server.js        # Main server with Socket.IO
-├── frontend/
-│   ├── src/
-│   │   ├── components/  # Reusable components (Navigation)
-│   │   ├── pages/       # Main pages (Dashboard, CreateGD, etc.)
-│   │   └── utils/       # API utilities
-│   └── public/          # Static files
-├── install.bat          # Windows installation script
-└── package.json         # Root package file
-```
 
 ## API Endpoints
 
@@ -131,45 +141,68 @@ gd-platform/
 - `POST /api/gd/:id/join` - Join existing GD
 - `PATCH /api/gd/:id/end` - End GD (moderator only)
 
-## Deployment
+### Evaluations
+- `POST /api/evaluation` - Submit transcript for AI + NLP evaluation
+- `GET /api/evaluation/:gdId` - Get evaluation results for a session
 
-### Frontend (Vercel/Netlify)
-1. Build: `cd frontend && npm run build`
-2. Deploy `build` folder
+## Deployment on Render
 
-### Backend (Render/Heroku)
-1. Set environment variables:
-   - `MONGODB_URI`
-   - `JWT_SECRET`
-   - `PORT=5001`
-2. Deploy `backend` folder
+### 1. Database — MongoDB Atlas
+- Create free cluster at [mongodb.com/atlas](https://mongodb.com/atlas)
+- Get connection string for `MONGODB_URI`
 
-### Database
-- Use MongoDB Atlas for cloud database
-- Update connection string in `.env`
+### 2. NLP Service — Web Service
+| Field | Value |
+|---|---|
+| Root Directory | `nlp-service` |
+| Runtime | Python 3 |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn app:app --host 0.0.0.0 --port 8000` |
+| Plan | Standard ($25/mo) — requires ~2GB RAM |
+
+### 3. Backend — Web Service
+| Field | Value |
+|---|---|
+| Root Directory | `backend` |
+| Runtime | Node |
+| Build Command | `npm install` |
+| Start Command | `node server.js` |
+
+Environment variables:
+- `MONGODB_URI`
+- `JWT_SECRET`
+- `GEMINI_API_KEY`
+- `NLP_SERVICE_URL` = your NLP service Render URL
+- `PORT` = `5001`
+
+### 4. Frontend — Static Site
+| Field | Value |
+|---|---|
+| Root Directory | `frontend` |
+| Build Command | `npm install && npm run build` |
+| Publish Directory | `build` |
+
+Environment variable:
+- `REACT_APP_API_URL` = your backend Render URL
 
 ## Troubleshooting
 
 ### MongoDB Issues
-- Ensure MongoDB service is running: `net start MongoDB`
-- Check if port 27017 is available
-- For MongoDB Atlas, update connection string in `.env`
+- Ensure MongoDB is running: `net start MongoDB`
+- Check port 27017 is available
+- For Atlas, verify connection string in `.env`
+
+### NLP Service Issues
+- Ensure Python 3.9+ is installed
+- First startup is slow — models download on first run (~500MB)
+- Requires minimum 2GB RAM in production
 
 ### Port Conflicts
-- Backend runs on port 5001 (changed from 5000)
-- Frontend runs on port 3000
-- If ports are busy, update `.env` file
+- Backend: `5001`, Frontend: `3000`, NLP: `8000`
+- Update `.env` if ports are busy
 
 ### Browser Permissions
-The app requires camera and microphone permissions for video conferencing. Users will be prompted to allow access when joining a GD room.
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch
-3. Make changes
-4. Test thoroughly
-5. Submit pull request
+Camera and microphone access is required for video conferencing. Users will be prompted when joining a room.
 
 ## License
 
