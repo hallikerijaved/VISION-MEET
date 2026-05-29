@@ -5,37 +5,89 @@ import Navigation from '../components/Navigation';
 
 const StatCard = ({ icon, value, label, color }) => (
   <div style={{
-    background: 'white', borderRadius: '16px', padding: '1.5rem',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.08)', display: 'flex',
-    alignItems: 'center', gap: '1rem', borderLeft: `4px solid ${color}`
-  }}>
-    <div style={{ fontSize: '2.2rem', background: `${color}18`, borderRadius: '12px', padding: '0.6rem', lineHeight: 1 }}>{icon}</div>
+    background: 'rgba(255, 255, 255, 0.8)',
+    backdropFilter: 'blur(12px)',
+    borderRadius: '20px',
+    padding: '1.5rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1.25rem',
+    border: '1px solid rgba(255, 255, 255, 0.5)',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+  }}
+    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+  >
+    <div style={{ 
+      fontSize: '2rem', 
+      background: `linear-gradient(135deg, ${color}22, ${color}44)`, 
+      borderRadius: '16px', 
+      width: '60px',
+      height: '60px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: `inset 0 0 0 1px ${color}33`
+    }}>{icon}</div>
     <div>
-      <div style={{ fontSize: '1.8rem', fontWeight: '700', color: '#1a1a2e', lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem', whiteSpace: 'nowrap' }}>{label}</div>
+      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#1e293b', lineHeight: 1, letterSpacing: '-0.02em' }}>{value}</div>
+      <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.35rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.025em' }}>{label}</div>
     </div>
   </div>
 );
 
-const ActionBtn = ({ icon, label, onClick, color }) => (
+const ActionBtn = ({ icon, label, onClick, color, gradient }) => (
   <button onClick={onClick} style={{
-    display: 'flex', alignItems: 'center', gap: '0.6rem',
-    padding: '0.85rem 1.4rem', background: color, color: 'white',
-    border: 'none', borderRadius: '10px', cursor: 'pointer',
-    fontSize: '0.95rem', fontWeight: '600', flex: 1, minWidth: 'fit-content', justifyContent: 'center',
-    boxShadow: `0 4px 12px ${color}55`, transition: 'transform 0.15s, box-shadow 0.15s',
-    whiteSpace: 'nowrap'
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.75rem',
+    padding: '1.25rem',
+    background: gradient || color,
+    color: 'white',
+    border: 'none',
+    borderRadius: '20px',
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    flex: 1,
+    minWidth: '140px',
+    boxShadow: `0 10px 15px -3px ${color}44`,
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    overflow: 'hidden'
   }}
-    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 6px 16px ${color}77`; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 12px ${color}55`; }}
+    onMouseEnter={e => { 
+      e.currentTarget.style.transform = 'translateY(-5px) scale(1.02)'; 
+      e.currentTarget.style.boxShadow = `0 20px 25px -5px ${color}55`;
+    }}
+    onMouseLeave={e => { 
+      e.currentTarget.style.transform = 'translateY(0) scale(1)'; 
+      e.currentTarget.style.boxShadow = `0 10px 15px -3px ${color}44`;
+    }}
   >
-    <span style={{ fontSize: '1.1rem' }}>{icon}</span> {label}
+    <div style={{ 
+      fontSize: '1.5rem', 
+      background: 'rgba(255, 255, 255, 0.2)', 
+      borderRadius: '12px', 
+      width: '44px', 
+      height: '44px', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      backdropFilter: 'blur(4px)'
+    }}>{icon}</div>
+    <span style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{label}</span>
+    <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', opacity: 0, transition: 'opacity 0.3s' }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0} />
   </button>
 );
 
 const MainDashboard = ({ user }) => {
   const [gds, setGds] = useState([]);
   const [conductedGDs, setConductedGDs] = useState([]);
+  const [recentEvaluations, setRecentEvaluations] = useState([]);
   const [stats, setStats] = useState({ activeGDs: 0, totalParticipants: 0, myGDs: 0 });
   const [joiningId, setJoiningId] = useState(null);
   const [joinError, setJoinError] = useState('');
@@ -51,6 +103,7 @@ const MainDashboard = ({ user }) => {
       const conducted = conductedRes.data;
       const active = all.filter(g => g.isActive);
       const myGDs = all.filter(g => g.moderator._id === user.id || g.participants.some(p => p._id === user.id));
+      
       setGds(active);
       setConductedGDs(conducted);
       setStats({
@@ -58,6 +111,14 @@ const MainDashboard = ({ user }) => {
         totalParticipants: active.reduce((s, g) => s + g.participants.length, 0),
         myGDs: Math.max(myGDs.length, conducted.length)
       });
+
+      // Fetch recent evaluations for the "Performance" section
+      const evalRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/evaluation/my-evaluations`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const evals = await evalRes.json();
+      setRecentEvaluations(Array.isArray(evals) ? evals.slice(0, 3) : []);
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -102,275 +163,399 @@ const MainDashboard = ({ user }) => {
   const formatDate = (date) => new Date(date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f2f8', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif", color: '#1e293b' }}>
       <Navigation user={user} />
 
-      {/* Hero */}
+      {/* Premium Hero Section */}
       <div style={{
-        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #2563eb 100%)',
-        padding: '3rem 2rem 5rem', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden'
+        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+        padding: '5rem 2rem 8rem', color: 'white', position: 'relative', overflow: 'hidden'
       }}>
-        <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '220px', height: '220px', background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '-40px', left: '-40px', width: '160px', height: '160px', background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
-        <div style={{ position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: 'clamp(2.5rem, 8vw, 4rem)', fontWeight: '900', letterSpacing: '-0.06em', fontFamily: "'Inter', sans-serif", color: 'white', textShadow: '0 0 30px rgba(167, 139, 250, 0.4)' }}>Vision<span style={{ color: '#a78bfa' }}>Meet</span></span>
+        {/* Animated background elements */}
+        <div style={{ position: 'absolute', top: '10%', left: '5%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)', filter: 'blur(50px)', animation: 'float 20s infinite alternate' }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(167, 139, 250, 0.1) 0%, transparent 70%)', filter: 'blur(60px)', animation: 'float 25s infinite alternate-reverse' }} />
+        
+        <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <span style={{ padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.1)', borderRadius: '99px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid rgba(255,255,255,0.1)', color: '#a78bfa' }}>
+                DASHBOARD V2.0
+              </span>
+              <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 10px #22c55e' }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: '600', opacity: 0.8 }}>SYSTEM ACTIVE</span>
+            </div>
+            <h1 style={{ margin: 0, fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: '800', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+              Welcome back,<br/>
+              <span style={{ background: 'linear-gradient(to right, #fff, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{user.name}</span>
+            </h1>
+            <p style={{ marginTop: '1.5rem', fontSize: '1.1rem', opacity: 0.7, maxWidth: '500px', lineHeight: 1.6 }}>
+              Your personalized workspace for real-time discussions, AI evaluations, and performance tracking.
+            </p>
           </div>
-          <h1 style={{ margin: 0, fontSize: 'clamp(1.2rem, 3vw, 1.6rem)', fontWeight: '600', opacity: 0.9 }}>
-            Welcome back, {user.name} 👋
-          </h1>
-          <p style={{ margin: '0.75rem 0 0', opacity: 0.75, fontSize: '1rem' }}>
-            Ready to discuss? {stats.activeGDs} live session{stats.activeGDs !== 1 ? 's' : ''} happening now.
-          </p>
+          
+          <div style={{ 
+            background: 'rgba(255,255,255,0.05)', 
+            backdropFilter: 'blur(20px)', 
+            borderRadius: '24px', 
+            padding: '2rem', 
+            border: '1px solid rgba(255,255,255,0.1)',
+            minWidth: '280px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#a78bfa', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Quick Link</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.5rem' }}>{stats.activeGDs}</div>
+            <div style={{ opacity: 0.7, fontSize: '0.9rem', marginBottom: '1.5rem' }}>Live Discussions Available</div>
+            <button 
+              onClick={() => navigate('/browse-gds')}
+              style={{ width: '100%', padding: '1rem', background: 'white', color: '#1e1b4b', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', transition: 'transform 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              Browse All
+            </button>
+          </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: '1100px', margin: '-2.5rem auto 0', padding: '0 1.5rem 3rem', position: 'relative' }}>
-
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
-          <StatCard icon="🎯" value={stats.activeGDs} label="Active Discussions" color="#4f46e5" />
-          <StatCard icon="👥" value={stats.totalParticipants} label="Live Participants" color="#059669" />
-          <StatCard icon="📋" value={stats.myGDs} label="My Discussions" color="#d97706" />
-          <StatCard icon="⚡" value="Live" label="Real-time Updates" color="#7c3aed" />
+      <div style={{ maxWidth: '1150px', margin: '-4rem auto 0', padding: '0 1.5rem 5rem', position: 'relative', zIndex: 10 }}>
+        
+        {/* Stats Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+          <StatCard icon="🎯" value={stats.activeGDs} label="Active Sessions" color="#6366f1" />
+          <StatCard icon="👥" value={stats.totalParticipants} label="Live Users" color="#10b981" />
+          <StatCard icon="📋" value={stats.myGDs} label="Your History" color="#f59e0b" />
+          <StatCard icon="📊" value={recentEvaluations.length > 0 ? `${recentEvaluations[0].scores.finalScore}%` : 'N/A'} label="Latest Score" color="#8b5cf6" />
         </div>
 
-        {/* Quick Actions */}
-        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.75rem' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <ActionBtn icon="🚀" label="Start New GD" onClick={() => navigate('/create-gd')} color="#4f46e5" />
-            <ActionBtn icon="🤖" label="AI Mock Interview" onClick={() => navigate('/interview')} color="#e11d48" />
-            <ActionBtn icon="📄" label="AI Resume Builder" onClick={() => navigate('/resume-builder')} color="#8b5cf6" />
-            <ActionBtn icon="📋" label="My Discussions" onClick={() => navigate('/my-gds')} color="#0891b2" />
-            <ActionBtn icon="🔍" label="Browse All GDs" onClick={() => navigate('/browse-gds')} color="#059669" />
-          </div>
-        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }} className="stitch-dash-main-grid">
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Quick Actions Panel */}
+            <div style={{ 
+              background: 'white', 
+              borderRadius: '24px', 
+              padding: '2rem', 
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)',
+              border: '1px solid #f1f5f9'
+            }}>
+              <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.25rem', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ padding: '0.4rem', background: '#eef2ff', borderRadius: '8px' }}>⚡</span>
+                Launch Workspace
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
+                <ActionBtn icon="🚀" label="Start New GD" onClick={() => navigate('/create-gd')} color="#4f46e5" gradient="linear-gradient(135deg, #4f46e5, #6366f1)" />
+                <ActionBtn icon="🤖" label="AI Mock Interview" onClick={() => navigate('/interview')} color="#e11d48" gradient="linear-gradient(135deg, #e11d48, #f43f5e)" />
+                <ActionBtn icon="📄" label="Resume Builder" onClick={() => navigate('/resume-builder')} color="#8b5cf6" gradient="linear-gradient(135deg, #8b5cf6, #a78bfa)" />
+                <ActionBtn icon="📋" label="My Sessions" onClick={() => navigate('/my-gds')} color="#0ea5e9" gradient="linear-gradient(135deg, #0ea5e9, #38bdf8)" />
+              </div>
+            </div>
 
-        {/* Conducted Discussions */}
-        <div style={{ background: 'white', borderRadius: '16px', padding: showConducted ? '1.5rem' : '1.1rem 1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.75rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showConducted ? '1.25rem' : 0, flexWrap: 'wrap', gap: '0.75rem' }}>
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowConducted((open) => !open)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', margin: 0, padding: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#374151', fontSize: '1.1rem', fontWeight: '700', fontFamily: 'inherit' }}
-              >
-                <span style={{ display: 'inline-flex', width: '28px', height: '28px', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', background: '#eef2ff', color: '#4f46e5', transform: showConducted ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-                  ▶
-                </span>
-                Conducted by You
-                <span style={{ background: '#f3f4f6', color: '#6b7280', padding: '0.18rem 0.55rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '800' }}>
-                  {conductedGDs.length}
-                </span>
-              </button>
-              <p style={{ margin: '0.25rem 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>
-                {showConducted ? 'Your self-created GD sessions, including ended discussions.' : 'Click to view your self-created GD sessions.'}
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <button
-                onClick={() => setShowConducted((open) => !open)}
-                style={{ padding: '0.65rem 1rem', background: '#eef2ff', color: '#4f46e5', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
-              >
-                {showConducted ? 'Hide' : 'Show'}
-              </button>
-              <button
-                onClick={() => navigate('/my-gds')}
-                style={{ padding: '0.65rem 1rem', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
-              >
-                View All
-              </button>
-            </div>
-          </div>
+            {/* Live Discussions Section */}
+            <div style={{ 
+              background: 'white', 
+              borderRadius: '24px', 
+              padding: '2rem', 
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)',
+              border: '1px solid #f1f5f9'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ padding: '0.4rem', background: '#fef2f2', borderRadius: '8px' }}>🔥</span>
+                  Live Discussions
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                  <span style={{ width: '10px', height: '10px', background: '#22c55e', borderRadius: '50%', boxShadow: '0 0 12px #22c55e', animation: 'pulse 2s infinite' }} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#64748b' }}>{stats.activeGDs} ONLINE</span>
+                </div>
+              </div>
 
-          {showConducted && (loading ? (
-            <div style={{ color: '#9ca3af', padding: '1.5rem 0' }}>Loading your conducted GDs...</div>
-          ) : conductedGDs.length === 0 ? (
-            <div style={{ border: '1px dashed #d1d5db', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', color: '#6b7280' }}>
-              <strong style={{ color: '#374151' }}>No self-conducted GDs yet</strong>
-              <p style={{ margin: '0.5rem 0 1rem' }}>Create a GD and it will appear here after you conduct it.</p>
-              <button
-                onClick={() => navigate('/create-gd')}
-                style={{ padding: '0.7rem 1.2rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
-              >
-                Start New GD
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '0.85rem' }}>
-              {conductedGDs.map((g) => (
-                <div key={g._id} style={{ border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1rem', background: g.isActive ? '#f8fafc' : '#ffffff' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start', marginBottom: '0.65rem' }}>
-                    <h3 style={{ margin: 0, color: '#1f2937', fontSize: '0.98rem', lineHeight: 1.35 }}>{g.title}</h3>
-                    <span style={{ flexShrink: 0, background: g.isActive ? '#dcfce7' : '#e5e7eb', color: g.isActive ? '#15803d' : '#4b5563', padding: '0.18rem 0.55rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: '800' }}>
-                      {g.isActive ? 'LIVE' : 'ENDED'}
-                    </span>
-                  </div>
-                  <p style={{ margin: '0 0 0.8rem', color: '#6b7280', fontSize: '0.82rem', lineHeight: 1.45 }}>
-                    {g.description || 'No description provided'}
-                  </p>
-                  <div style={{ display: 'grid', gap: '0.35rem', color: '#6b7280', fontSize: '0.8rem', marginBottom: '0.9rem' }}>
-                    <span>Participants: {g.participants.length}/{g.maxParticipants}</span>
-                    <span>Conducted: {formatDate(g.createdAt)}</span>
-                  </div>
-                  <button
-                    onClick={() => g.isActive ? handleJoin(g._id, g.roomId) : navigate('/my-gds')}
-                    style={{ width: '100%', padding: '0.6rem 0.9rem', background: g.isActive ? '#4f46e5' : '#f3f4f6', color: g.isActive ? 'white' : '#374151', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}
+              {joinError && (
+                <div style={{ background: '#fef2f2', color: '#dc2626', padding: '1rem', borderRadius: '16px', marginBottom: '1.5rem', fontSize: '0.9rem', border: '1px solid #fee2e2', fontWeight: '600' }}>
+                  ⚠️ {joinError}
+                </div>
+              )}
+
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+                  <div className="stitch-spinner" style={{ width: '40px', height: '40px', border: '4px solid #f1f5f9', borderTop: '4px solid #6366f1', borderRadius: '50%', margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
+                  <p style={{ fontWeight: '600' }}>Syncing global sessions...</p>
+                </div>
+              ) : gds.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '4rem', background: '#f8fafc', borderRadius: '20px', border: '2px dashed #e2e8f0' }}>
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>☁️</div>
+                  <h3 style={{ color: '#1e293b', margin: '0 0 0.5rem', fontSize: '1.25rem', fontWeight: '800' }}>The lobby is quiet</h3>
+                  <p style={{ color: '#64748b', margin: '0 0 2rem', fontWeight: '500' }}>Be the one to spark a new conversation.</p>
+                  <button 
+                    onClick={() => navigate('/create-gd')}
+                    style={{ padding: '1rem 2rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)' }}
                   >
-                    {g.isActive ? 'Rejoin GD' : 'View Details'}
+                    Host a Discussion
                   </button>
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        {/* Live Discussions */}
-        <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#374151', fontWeight: '700' }}>
-              🔥 Live Discussions
-            </h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
-              <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>{stats.activeGDs} active now</span>
+              ) : (
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {gds.map((g) => {
+                    const full = g.participants.length >= g.maxParticipants;
+                    const pct = fillPct(g);
+                    return (
+                      <div key={g._id} style={{
+                        border: '1px solid #f1f5f9', borderRadius: '20px', padding: '1.5rem',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        background: 'white',
+                        position: 'relative',
+                        overflow: 'hidden'
+                      }}
+                        onMouseEnter={e => { 
+                          e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.05)'; 
+                          e.currentTarget.style.borderColor = '#6366f133';
+                          e.currentTarget.style.transform = 'scale(1.01)';
+                        }}
+                        onMouseLeave={e => { 
+                          e.currentTarget.style.boxShadow = 'none'; 
+                          e.currentTarget.style.borderColor = '#f1f5f9';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1.5rem', flexWrap: 'wrap' }}>
+                          <div style={{ flex: 1, minWidth: '280px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                              <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#1e293b', fontWeight: '800', letterSpacing: '-0.02em' }}>{g.title}</h3>
+                              <span style={{ background: full ? '#fee2e2' : '#dcfce7', color: full ? '#dc2626' : '#15803d', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.025em' }}>
+                                {full ? 'SESSION FULL' : 'LIVE NOW'}
+                              </span>
+                            </div>
+                            <p style={{ color: '#64748b', margin: '0 0 1.25rem', fontSize: '0.95rem', lineHeight: 1.6, fontWeight: '500' }}>
+                              {g.description || 'Global collaboration room. Join to share insights and participate in the discussion.'}
+                            </p>
+                            <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>👤 {g.moderator.name}</span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>👥 {g.participants.length}/{g.maxParticipants}</span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>🕒 {timeAgo(g.createdAt)}</span>
+                            </div>
+                            <div style={{ marginTop: '1.25rem', background: '#f1f5f9', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', background: pct >= 100 ? '#ef4444' : pct > 75 ? '#f59e0b' : 'linear-gradient(90deg, #6366f1, #a78bfa)', borderRadius: '99px', transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <button
+                              onClick={() => handleJoin(g._id, g.roomId)}
+                              disabled={full || joiningId === g._id}
+                              style={{
+                                padding: '0.85rem 1.75rem', fontWeight: '800', fontSize: '0.95rem',
+                                background: full ? '#f1f5f9' : joiningId === g._id ? '#818cf8' : '#4f46e5',
+                                color: full ? '#94a3b8' : 'white', border: 'none', borderRadius: '14px',
+                                cursor: full || joiningId === g._id ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s',
+                                boxShadow: full ? 'none' : '0 10px 15px -3px rgba(79, 70, 229, 0.3)'
+                              }}
+                            >
+                              {joiningId === g._id ? 'Joining...' : full ? 'Full' : 'Join Session'}
+                            </button>
+                            <button
+                              onClick={() => handleCopy(g.roomId)}
+                              style={{ 
+                                width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: copied === g.roomId ? '#dcfce7' : '#f8fafc', 
+                                border: '1px solid #f1f5f9', borderRadius: '14px', cursor: 'pointer', fontSize: '1.25rem', transition: 'all 0.2s' 
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.borderColor = '#6366f1'}
+                              onMouseLeave={e => e.currentTarget.style.borderColor = '#f1f5f9'}
+                            >
+                              {copied === g.roomId ? '✅' : '🔗'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
-          {joinError && (
-            <div style={{ background: '#fef2f2', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem' }}>
-              ❌ {joinError}
-            </div>
-          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Sidebar: Conducted by You */}
+            <div style={{ 
+              background: 'white', 
+              borderRadius: '24px', 
+              padding: '1.75rem', 
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)',
+              border: '1px solid #f1f5f9'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#1e293b' }}>Host History</h3>
+                <button 
+                  onClick={() => setShowConducted(!showConducted)}
+                  style={{ background: 'none', border: 'none', color: '#6366f1', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer' }}
+                >
+                  {showConducted ? 'Collapse' : 'Expand'}
+                </button>
+              </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#9ca3af' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏳</div>
-              Loading discussions...
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {conductedGDs.slice(0, showConducted ? 10 : 3).map(g => (
+                  <div key={g._id} style={{ 
+                    padding: '1rem', 
+                    borderRadius: '16px', 
+                    background: '#f8fafc',
+                    border: '1px solid #f1f5f9'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{g.title}</span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: g.isActive ? '#16a34a' : '#64748b', background: g.isActive ? '#dcfce7' : '#f1f5f9', padding: '0.15rem 0.5rem', borderRadius: '99px' }}>
+                        {g.isActive ? 'LIVE' : 'ENDED'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500', marginBottom: '0.75rem' }}>{formatDate(g.createdAt)}</div>
+                    <button 
+                      onClick={() => g.isActive ? handleJoin(g._id, g.roomId) : navigate(`/dashboard/results/${g.roomId}`)}
+                      style={{ width: '100%', padding: '0.5rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '700', color: '#475569', cursor: 'pointer', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#6366f1'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#475569'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                    >
+                      {g.isActive ? 'Join Room' : 'View Results'}
+                    </button>
+                  </div>
+                ))}
+                {conductedGDs.length === 0 && <div style={{ textAlign: 'center', padding: '1rem', color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>No hosted sessions yet.</div>}
+                {!showConducted && conductedGDs.length > 3 && (
+                  <button onClick={() => setShowConducted(true)} style={{ textAlign: 'center', padding: '0.5rem', color: '#64748b', fontSize: '0.85rem', fontWeight: '700', border: 'none', background: 'none', cursor: 'pointer' }}>+ {conductedGDs.length - 3} more</button>
+                )}
+              </div>
             </div>
-          ) : gds.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem' }}>
-              <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>💬</div>
-              <h3 style={{ color: '#374151', margin: '0 0 0.5rem' }}>No active discussions</h3>
-              <p style={{ color: '#9ca3af', margin: '0 0 1.5rem' }}>Be the first to start one!</p>
-              <ActionBtn icon="🚀" label="Start First GD" onClick={() => navigate('/create-gd')} color="#4f46e5" />
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: '0.85rem' }}>
-              {gds.map((g) => {
-                const full = g.participants.length >= g.maxParticipants;
-                const pct = fillPct(g);
-                return (
-                  <div key={g._id} style={{
-                    border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.25rem',
-                    transition: 'box-shadow 0.2s, border-color 0.2s',
-                    background: full ? '#fafafa' : 'white'
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(79,70,229,0.12)'; e.currentTarget.style.borderColor = '#c7d2fe'; }}
-                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1, minWidth: 'min(100%, 200px)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                          <h3 style={{ margin: 0, fontSize: '1rem', color: '#1f2937', fontWeight: '700' }}>{g.title}</h3>
-                          <span style={{ background: full ? '#fee2e2' : '#dcfce7', color: full ? '#dc2626' : '#16a34a', padding: '0.15rem 0.5rem', borderRadius: '20px', fontSize: '0.7rem', fontWeight: '700' }}>
-                            {full ? 'FULL' : 'LIVE'}
-                          </span>
-                        </div>
-                        <p style={{ color: '#6b7280', margin: '0 0 0.75rem', fontSize: '0.875rem', lineHeight: 1.5 }}>
-                          {g.description || 'Join the discussion and share your thoughts!'}
-                        </p>
-                        <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#9ca3af', flexWrap: 'wrap' }}>
-                          <span>👤 {g.moderator.name}</span>
-                          <span>👥 {g.participants.length}/{g.maxParticipants}</span>
-                          <span>🕒 {timeAgo(g.createdAt)}</span>
-                        </div>
-                        {/* Fill bar */}
-                        <div style={{ marginTop: '0.75rem', background: '#f3f4f6', borderRadius: '99px', height: '5px', overflow: 'hidden' }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: pct >= 100 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#22c55e', borderRadius: '99px', transition: 'width 0.4s' }} />
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button
-                          onClick={() => handleJoin(g._id, g.roomId)}
-                          disabled={full || joiningId === g._id}
-                          style={{
-                            padding: '0.65rem 1.25rem', fontWeight: '700', fontSize: '0.9rem',
-                            background: full ? '#e5e7eb' : joiningId === g._id ? '#818cf8' : '#4f46e5',
-                            color: full ? '#9ca3af' : 'white', border: 'none', borderRadius: '8px',
-                            cursor: full || joiningId === g._id ? 'not-allowed' : 'pointer',
-                            transition: 'background 0.2s'
-                          }}
-                        >
-                          {joiningId === g._id ? 'Joining...' : full ? 'Full' : 'Join Now'}
-                        </button>
-                        <button
-                          onClick={() => handleCopy(g.roomId)}
-                          title="Copy share link"
-                          style={{ padding: '0.65rem 0.85rem', background: copied === g.roomId ? '#dcfce7' : '#f3f4f6', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', transition: 'background 0.2s' }}
-                        >
-                          {copied === g.roomId ? '✅' : '📋'}
-                        </button>
-                      </div>
+
+            {/* Performance Insights Section */}
+            <div style={{ 
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', 
+              borderRadius: '24px', 
+              padding: '1.75rem', 
+              boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.2)',
+              color: 'white'
+            }}>
+              <h3 style={{ margin: '0 0 1.25rem', fontSize: '1.1rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ padding: '0.4rem', background: 'rgba(255,255,255,0.2)', borderRadius: '8px' }}>📈</span>
+                Performance
+              </h3>
+              
+              {recentEvaluations.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '16px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '700', opacity: 0.8, marginBottom: '0.5rem', textTransform: 'uppercase' }}>Latest Score</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '2.5rem', fontWeight: '900' }}>{recentEvaluations[0].scores.finalScore}</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: '700', opacity: 0.8 }}>/100</span>
+                    </div>
+                    <div style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.1)', height: '8px', borderRadius: '99px' }}>
+                      <div style={{ width: `${recentEvaluations[0].scores.finalScore}%`, height: '100%', background: 'white', borderRadius: '99px', boxShadow: '0 0 10px rgba(255,255,255,0.5)' }} />
                     </div>
                   </div>
-                );
-              })}
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {recentEvaluations.slice(0, 2).map((ev, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                        <span style={{ fontWeight: '600', opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>{ev.gdTitle}</span>
+                        <span style={{ fontWeight: '800', background: 'rgba(255,255,255,0.2)', padding: '0.2rem 0.6rem', borderRadius: '8px' }}>{ev.scores.finalScore}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <button 
+                    onClick={() => navigate('/evaluations')}
+                    style={{ width: '100%', padding: '0.85rem', background: 'white', color: '#6366f1', border: 'none', borderRadius: '14px', fontWeight: '800', cursor: 'pointer', marginTop: '0.5rem' }}
+                  >
+                    Full Analytics
+                  </button>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(255,255,255,0.1)', borderRadius: '16px' }}>
+                  <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600', opacity: 0.8 }}>Complete a GD to unlock your performance insights.</p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="stitch-dashboard-footer" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', color: 'rgba(255,255,255,0.7)', padding: '4rem 2rem 1.5rem', marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div className="stitch-footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '3rem', marginBottom: '3rem' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
-                <span style={{ color: 'white', fontWeight: '900', fontSize: '1.4rem', letterSpacing: '-0.04em', fontFamily: "'Manrope', sans-serif" }}>Vision<span style={{ color: '#a78bfa' }}>Meet</span></span>
+      {/* Modern Footer */}
+      <footer style={{ 
+        background: '#0f172a', 
+        padding: '5rem 2rem 3rem', 
+        color: '#94a3b8',
+        borderTop: '1px solid rgba(255,255,255,0.05)'
+      }}>
+        <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '4rem', marginBottom: '4rem' }}>
+            <div style={{ gridColumn: 'span 2' }}>
+              <div style={{ color: 'white', fontWeight: '900', fontSize: '1.75rem', letterSpacing: '-0.04em', marginBottom: '1.5rem' }}>
+                Vision<span style={{ color: '#6366f1' }}>Meet</span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.7 }}>Real-time group discussions with video conferencing, AI interviews, and smart evaluations tailored for professionals.</p>
+              <p style={{ lineHeight: 1.8, maxWidth: '400px', fontSize: '1rem' }}>
+                The next generation of professional collaboration. Real-time discussions enhanced by AI evaluation and blockchain-verified certifications.
+              </p>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                {['Twitter', 'LinkedIn', 'GitHub'].map(social => (
+                  <div key={social} style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <span style={{ fontSize: '1.2rem', color: 'white' }}>●</span>
+                  </div>
+                ))}
+              </div>
             </div>
             <div>
-              <h4 style={{ color: 'white', margin: '0 0 1rem', fontSize: '1rem', fontWeight: '600' }}>Quick Links</h4>
-              {[['🚀 Start GD', '/create-gd'], ['🔍 Browse GDs', '/browse-gds'], ['📋 My GDs', '/my-gds'], ['🤖 AI Interview', '/interview']].map(([label, path]) => (
-                <div key={path} onClick={() => navigate(path)} style={{ cursor: 'pointer', fontSize: '0.9rem', marginBottom: '0.8rem', transition: 'color 0.2s', display: 'block' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#a78bfa'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}>
-                  {label}
-                </div>
-              ))}
+              <h4 style={{ color: 'white', fontWeight: '800', marginBottom: '1.5rem', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Platform</h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {[['Dashboard', '/dashboard'], ['Browse GDs', '/browse-gds'], ['My Sessions', '/my-gds'], ['AI Interview', '/interview']].map(([label, path]) => (
+                  <li key={path} onClick={() => navigate(path)} style={{ cursor: 'pointer', transition: 'color 0.2s', fontWeight: '600' }} onMouseEnter={e => e.currentTarget.style.color = 'white'} onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}>
+                    {label}
+                  </li>
+                ))}
+              </ul>
             </div>
             <div>
-              <h4 style={{ color: 'white', margin: '0 0 1rem', fontSize: '1rem', fontWeight: '600' }}>Features</h4>
-              {['🎥 HD Video Conferencing', '💬 Real-time Chat', '🤖 AI Evaluation', '📊 Analytics Dashboard'].map(f => (
-                <div key={f} style={{ fontSize: '0.9rem', marginBottom: '0.6rem' }}>{f}</div>
-              ))}
-            </div>
-            <div>
-              <h4 style={{ color: 'white', margin: '0 0 1rem', fontSize: '1rem', fontWeight: '600' }}>Status</h4>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', marginBottom: '0.6rem' }}>
-                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)' }} />
-                Backend Online
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', marginBottom: '0.6rem' }}>
-                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)' }} />
-                MongoDB Connected
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem' }}>
-                <span style={{ width: '8px', height: '8px', background: '#22c55e', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 10px rgba(34, 197, 94, 0.5)' }} />
-                WebRTC Ready
-              </div>
+              <h4 style={{ color: 'white', fontWeight: '800', marginBottom: '1.5rem', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Resources</h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {['Documentation', 'API Reference', 'Community', 'Status'].map(item => (
+                  <li key={item} style={{ cursor: 'pointer', transition: 'color 0.2s', fontWeight: '600' }} onMouseEnter={e => e.currentTarget.style.color = 'white'} onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-          <div className="stitch-footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.85rem' }}>© {new Date().getFullYear()} <strong style={{ color: 'white', fontWeight: '700' }}>VisionMeet</strong>. All rights reserved.</span>
-            <span style={{ fontSize: '0.85rem' }}>Built with ⚡ React · Node.js · WebRTC</span>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', fontSize: '0.9rem', fontWeight: '600' }}>
+            <span>© {new Date().getFullYear()} VisionMeet. Designed for the future of work.</span>
+            <div style={{ display: 'flex', gap: '2rem' }}>
+              <span style={{ cursor: 'pointer' }}>Privacy Policy</span>
+              <span style={{ cursor: 'pointer' }}>Terms of Service</span>
+            </div>
           </div>
         </div>
       </footer>
 
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+      <style>{`
+        @keyframes float {
+          0% { transform: translate(0, 0); }
+          100% { transform: translate(20px, 20px); }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.2); opacity: 0.7; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        @media (max-width: 900px) {
+          .stitch-dash-main-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @font-face {
+          font-family: 'Plus Jakarta Sans';
+          src: url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        }
+      `}</style>
     </div>
   );
 };

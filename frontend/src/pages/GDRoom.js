@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'; // Upda
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { API_URL, SOCKET_URL } from '../utils/api';
+import api, { API_URL, SOCKET_URL } from '../utils/api';
 import './GDRoom.css';
 
 const ICE_SERVERS = {
@@ -215,20 +215,15 @@ export default function GDRoom({ user }) {
         try {
           setEvaluating(true);
           const token = localStorage.getItem('token');
-          const res = await fetch(`${API_URL}/evaluation/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ 
-              gdId: roomId, 
-              gdTitle: gdTopic, 
-              messageCount: contributionsRef.current.length, 
-              speakingTime: 0, 
-              contributions: contributionsRef.current 
-            }),
+          const res = await api.post('/evaluation/generate', { 
+            gdId: roomId, 
+            gdTitle: gdTopic, 
+            messageCount: contributionsRef.current.length, 
+            speakingTime: 0, 
+            contributions: contributionsRef.current 
           });
-          const data = await res.json();
-          if (data.success) { 
-            setEvaluation(data.evaluation); 
+          if (res.data.success) { 
+            setEvaluation(res.data.evaluation); 
             setShowEval(true); 
           } else {
             navigate('/dashboard');
@@ -389,15 +384,15 @@ export default function GDRoom({ user }) {
     setEvaluating(true);
     let success = false;
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/evaluation/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ gdId: roomId, gdTitle: gdTopic, messageCount: contributionsRef.current.length, speakingTime: 0, contributions: contributionsRef.current }),
+      const res = await api.post('/evaluation/generate', { 
+        gdId: roomId, 
+        gdTitle: gdTopic, 
+        messageCount: contributionsRef.current.length, 
+        speakingTime: 0, 
+        contributions: contributionsRef.current 
       });
-      const data = await res.json();
-      if (data.success) { 
-        setEvaluation(data.evaluation); 
+      if (res.data.success) { 
+        setEvaluation(res.data.evaluation); 
         setShowEval(true); 
         success = true;
       }

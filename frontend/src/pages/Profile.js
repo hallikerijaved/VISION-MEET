@@ -88,139 +88,199 @@ const Profile = ({ user, setUser }) => {
   };
 
   const inputStyle = {
-    width: '100%', padding: '0.75rem 1rem', border: '1px solid #e5e7eb',
-    borderRadius: '10px', fontSize: '0.95rem', outline: 'none',
-    background: '#f9fafb', boxSizing: 'border-box', transition: 'border-color 0.2s'
+    width: '100%',
+    padding: '1rem 1.25rem',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '16px',
+    color: 'white',
+    fontSize: '0.95rem',
+    outline: 'none',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    fontFamily: "'Inter', sans-serif",
+    boxSizing: 'border-box'
+  };
+
+  const labelStyle = {
+    display: 'block',
+    marginBottom: '0.5rem',
+    color: '#94a3b8',
+    fontSize: '0.8rem',
+    fontWeight: '700',
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase'
   };
 
   if (!profile) return (
-    <div style={{ minHeight: '100vh', background: '#f0f2f8' }}>
-      <Navigation user={user} />
-      <div style={{ textAlign: 'center', padding: '5rem', color: '#9ca3af' }}>Loading profile...</div>
+    <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '40px', height: '40px', border: '4px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f2f8', fontFamily: "'Segoe UI', sans-serif" }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      background: '#0f172a',
+      fontFamily: "'Plus Jakarta Sans', sans-serif",
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Background blobs */}
+      <div style={{ position: 'fixed', top: '-10%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'fixed', bottom: '-10%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(167, 139, 250, 0.05) 0%, transparent 70%)', filter: 'blur(80px)', pointerEvents: 'none' }} />
+
       <Navigation user={user} />
 
-      <div style={{ maxWidth: '700px', margin: '2rem auto', padding: '0 1.5rem 3rem' }}>
-        <h2 style={{ margin: '0 0 1.5rem', fontSize: '1.3rem', color: '#1f2937', fontWeight: '700' }}>👤 My Profile</h2>
+      <div style={{ maxWidth: '800px', margin: '4rem auto', padding: '0 2rem 6rem', position: 'relative', zIndex: 1 }}>
+        
+        <div style={{ marginBottom: '3rem' }}>
+          <h1 style={{ color: 'white', fontSize: '2.5rem', fontWeight: '800', margin: '0 0 0.5rem 0', letterSpacing: '-0.02em' }}>
+            Account Settings
+          </h1>
+          <p style={{ color: '#94a3b8', fontSize: '1.1rem', margin: 0 }}>
+            Manage your personal information and security preferences.
+          </p>
+        </div>
 
         {/* Profile Card */}
-        <div style={{ background: 'white', borderRadius: '16px', padding: '2rem', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-            {/* Avatar */}
-            <div style={{ position: 'relative' }}>
-              {profile.profilePicture ? (
-                <img src={profile.profilePicture} alt="avatar"
-                  style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #e0e7ff' }} />
-              ) : (
-                <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', color: 'white', fontWeight: '700', border: '3px solid #e0e7ff' }}>
-                  {profile.name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <button onClick={() => fileRef.current.click()} disabled={picLoading}
-                style={{ position: 'absolute', bottom: 0, right: 0, width: '28px', height: '28px', borderRadius: '50%', background: '#4f46e5', border: '2px solid white', cursor: 'pointer', fontSize: '0.75rem', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {picLoading ? '⏳' : '✏️'}
-              </button>
-              <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePictureChange} />
-            </div>
-            {/* Info */}
-            <div>
-              <div style={{ fontSize: '1.3rem', fontWeight: '700', color: '#1f2937' }}>{profile.name}</div>
-              <div style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '0.25rem' }}>{profile.email}</div>
-              <div style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                Joined {new Date(profile.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        <div style={{ 
+          background: 'rgba(255, 255, 255, 0.03)', 
+          backdropFilter: 'blur(10px)', 
+          borderRadius: '32px', 
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '2.5rem',
+          marginBottom: '2rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2rem',
+          flexWrap: 'wrap'
+        }}>
+          {/* Avatar */}
+          <div style={{ position: 'relative' }}>
+            {profile.profilePicture ? (
+              <img src={profile.profilePicture} alt="avatar"
+                style={{ width: '120px', height: '120px', borderRadius: '32px', objectFit: 'cover', border: '4px solid rgba(255,255,255,0.05)' }} />
+            ) : (
+              <div style={{ width: '120px', height: '120px', borderRadius: '32px', background: 'linear-gradient(135deg, #6366f1, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', color: 'white', fontWeight: '800' }}>
+                {profile.name.charAt(0).toUpperCase()}
               </div>
-              {profile.bio && <div style={{ color: '#4b5563', fontSize: '0.875rem', marginTop: '0.5rem', fontStyle: 'italic' }}>{profile.bio}</div>}
+            )}
+            <button onClick={() => fileRef.current.click()} disabled={picLoading}
+              style={{ position: 'absolute', bottom: '-10px', right: '-10px', width: '40px', height: '40px', borderRadius: '12px', background: '#6366f1', border: '3px solid #0f172a', cursor: 'pointer', fontSize: '1.2rem', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 15px -3px rgba(99, 102, 241, 0.3)' }}>
+              {picLoading ? '⏳' : '📸'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePictureChange} />
+          </div>
+          
+          {/* User Basic Info */}
+          <div>
+            <h2 style={{ color: 'white', fontSize: '1.75rem', fontWeight: '800', margin: '0 0 0.25rem 0' }}>{profile.name}</h2>
+            <p style={{ color: '#94a3b8', fontSize: '1rem', margin: '0 0 0.75rem 0' }}>{profile.email}</p>
+            <div style={{ display: 'inline-flex', padding: '0.4rem 0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', color: '#64748b', fontSize: '0.8rem', fontWeight: '700' }}>
+              MEMBER SINCE {new Date(profile.createdAt).getFullYear()}
             </div>
           </div>
         </div>
 
-        {/* Message */}
+        {/* Status Message */}
         {msg.text && (
-          <div style={{ background: msg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: msg.type === 'success' ? '#16a34a' : '#dc2626', padding: '0.75rem 1rem', borderRadius: '10px', marginBottom: '1rem', fontSize: '0.9rem', textAlign: 'center' }}>
+          <div style={{ 
+            background: msg.type === 'success' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+            color: msg.type === 'success' ? '#4ade80' : '#f87171', 
+            padding: '1rem 1.5rem', 
+            borderRadius: '16px', 
+            marginBottom: '2rem', 
+            border: `1px solid ${msg.type === 'success' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+            fontSize: '0.95rem',
+            fontWeight: '600',
+            textAlign: 'center',
+            animation: 'slideUp 0.3s ease-out'
+          }}>
             {msg.type === 'success' ? '✅' : '❌'} {msg.text}
           </div>
         )}
 
-        {/* Tabs */}
-        <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>
-            {[['info', '✏️ Edit Profile'], ['password', '🔒 Change Password']].map(([key, label]) => (
+        {/* Settings Tabs */}
+        <div style={{ 
+          background: 'rgba(255, 255, 255, 0.03)', 
+          backdropFilter: 'blur(10px)', 
+          borderRadius: '32px', 
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          overflow: 'hidden'
+        }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            {[['info', '👤 Profile Info'], ['password', '🔐 Security']].map(([key, label]) => (
               <button key={key} onClick={() => setTab(key)} style={{
-                flex: 1, padding: '1rem', border: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600',
-                background: tab === key ? '#f5f3ff' : 'white',
-                color: tab === key ? '#4f46e5' : '#6b7280',
-                borderBottom: tab === key ? '2px solid #4f46e5' : '2px solid transparent',
-                transition: 'all 0.2s'
+                flex: 1, padding: '1.5rem', border: 'none', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '700',
+                background: tab === key ? 'rgba(99, 102, 241, 0.05)' : 'transparent',
+                color: tab === key ? '#818cf8' : '#64748b',
+                borderBottom: tab === key ? '3px solid #6366f1' : '3px solid transparent',
+                transition: 'all 0.3s'
               }}>{label}</button>
             ))}
           </div>
 
-          <div style={{ padding: '1.75rem' }}>
-            {/* Edit Profile Tab */}
+          <div style={{ padding: '3rem' }}>
             {tab === 'info' && (
-              <form onSubmit={handleUpdateProfile}>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Full Name</label>
+              <form onSubmit={handleUpdateProfile} style={{ display: 'grid', gap: '2rem' }}>
+                <div>
+                  <label style={labelStyle}>Full Name</label>
                   <input style={inputStyle} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                    placeholder="Your full name" required />
+                    placeholder="Your full name" required className="stitch-input" />
                 </div>
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Email</label>
-                  <input style={{ ...inputStyle, background: '#f3f4f6', color: '#9ca3af', cursor: 'not-allowed' }} value={profile.email} disabled />
-                  <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.3rem' }}>Email cannot be changed</div>
+                <div>
+                  <label style={labelStyle}>Email Address</label>
+                  <input style={{ ...inputStyle, opacity: 0.5, cursor: 'not-allowed' }} value={profile.email} disabled />
+                  <p style={{ color: '#475569', fontSize: '0.75rem', marginTop: '0.5rem', fontWeight: '600' }}>Email cannot be modified for security reasons.</p>
                 </div>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>Bio</label>
-                  <textarea style={{ ...inputStyle, minHeight: '90px', resize: 'vertical' }} value={form.bio}
+                <div>
+                  <label style={labelStyle}>Bio / Professional Summary</label>
+                  <textarea style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }} value={form.bio}
                     onChange={e => setForm({ ...form, bio: e.target.value })}
-                    onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                    onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                    placeholder="Tell something about yourself..." />
+                    placeholder="Tell us about your background and goals..." className="stitch-input" />
                 </div>
                 <button type="submit" disabled={loading} style={{
-                  width: '100%', padding: '0.85rem', background: '#4f46e5', color: 'white',
-                  border: 'none', borderRadius: '10px', fontSize: '1rem', fontWeight: '600',
-                  cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
-                }}>
-                  {loading ? 'Saving...' : 'Save Changes'}
+                  padding: '1.25rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: '16px',
+                  fontSize: '1.1rem', fontWeight: '800', cursor: loading ? 'not-allowed' : 'pointer', transition: 'all 0.3s',
+                  boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.3)'
+                }} onMouseEnter={e => !loading && (e.currentTarget.style.transform = 'translateY(-2px)')}
+                   onMouseLeave={e => !loading && (e.currentTarget.style.transform = 'translateY(0)')}>
+                  {loading ? 'SAVING CHANGES...' : 'SAVE PROFILE'}
                 </button>
               </form>
             )}
 
-            {/* Change Password Tab */}
             {tab === 'password' && (
-              <form onSubmit={handleChangePassword}>
-                {[['currentPassword', 'Current Password', 'Enter current password'],
-                  ['newPassword', 'New Password', 'At least 6 characters'],
-                  ['confirmPassword', 'Confirm New Password', 'Re-enter new password']
+              <form onSubmit={handleChangePassword} style={{ display: 'grid', gap: '2rem' }}>
+                {[
+                  ['currentPassword', 'Current Password', 'Verify your identity'],
+                  ['newPassword', 'New Password', 'Minimum 6 characters'],
+                  ['confirmPassword', 'Confirm New Password', 'Repeat new password']
                 ].map(([key, label, placeholder]) => (
-                  <div key={key} style={{ marginBottom: '1.25rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>{label}</label>
+                  <div key={key}>
+                    <label style={labelStyle}>{label}</label>
                     <input type="password" style={inputStyle} value={pwForm[key]}
                       onChange={e => setPwForm({ ...pwForm, [key]: e.target.value })}
-                      onFocus={e => e.target.style.borderColor = '#4f46e5'}
-                      onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-                      placeholder={placeholder} required />
+                      placeholder={placeholder} required className="stitch-input" />
                   </div>
                 ))}
                 <button type="submit" disabled={loading} style={{
-                  width: '100%', padding: '0.85rem', background: '#4f46e5', color: 'white',
-                  border: 'none', borderRadius: '10px', fontSize: '1rem', fontWeight: '600',
-                  cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
-                }}>
-                  {loading ? 'Changing...' : 'Change Password'}
+                  padding: '1.25rem', background: 'rgba(255, 255, 255, 0.05)', color: 'white', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '16px',
+                  fontSize: '1.1rem', fontWeight: '800', cursor: loading ? 'not-allowed' : 'pointer', transition: 'all 0.3s'
+                }} onMouseEnter={e => !loading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+                   onMouseLeave={e => !loading && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}>
+                  {loading ? 'UPDATING SECURITY...' : 'CHANGE PASSWORD'}
                 </button>
               </form>
             )}
           </div>
         </div>
       </div>
+      <style>{`
+        .stitch-input:focus { border-color: #6366f1 !important; background: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 };

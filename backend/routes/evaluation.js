@@ -21,7 +21,7 @@ router.post('/generate', auth, async (req, res) => {
 
     const evaluation = new Evaluation({
       gdId,
-      userId: req.user.id,
+      userId: req.user._id,
       userName: req.user.name,
       gdTitle: gdTitle || 'Group Discussion',
       scores: {
@@ -58,7 +58,7 @@ router.post('/generate', auth, async (req, res) => {
 // Get user's evaluations
 router.get('/my-evaluations', auth, async (req, res) => {
   try {
-    const evaluations = await Evaluation.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(50);
+    const evaluations = await Evaluation.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(50);
     res.json(evaluations);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch evaluations' });
