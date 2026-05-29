@@ -22,6 +22,7 @@ const Login = ({ setUser }) => {
       handleGithubCallback(code);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGithubCallback = async (code) => {

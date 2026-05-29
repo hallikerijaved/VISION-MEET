@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'; // Upda
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import api, { API_URL, SOCKET_URL } from '../utils/api';
+import api, { SOCKET_URL } from '../utils/api';
 import './GDRoom.css';
 
 const ICE_SERVERS = {
@@ -214,7 +214,6 @@ export default function GDRoom({ user }) {
       if (contributionsRef.current.length > 0) {
         try {
           setEvaluating(true);
-          const token = localStorage.getItem('token');
           const res = await api.post('/evaluation/generate', { 
             gdId: roomId, 
             gdTitle: gdTopic, 

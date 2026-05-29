@@ -114,7 +114,6 @@ const NavDropdown = ({ title, icon, items, activePath }) => {
 const Navigation = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const logout = () => {
     localStorage.removeItem('token');
